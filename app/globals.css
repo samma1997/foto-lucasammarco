@@ -5,8 +5,6 @@
   --color-foreground: #ffffff;
   --font-sans: var(--font-inter);
   --font-serif: var(--font-cormorant);
-  --font-hand: var(--font-hand);
-  --font-marker: var(--font-marker);
 }
 
 html,
@@ -17,7 +15,6 @@ body {
   overflow: hidden;
 }
 
-/* --- Fade ins --- */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -28,73 +25,24 @@ body {
     transform: translateY(0);
   }
 }
-.fade-in-1 {
+
+.fade-line-1 {
   opacity: 0;
-  animation: fadeIn 2.4s ease-out 0.1s forwards;
+  animation: fadeIn 3.5s ease-out 1.2s forwards;
 }
-.fade-in-2 {
+.fade-line-2 {
   opacity: 0;
-  animation: fadeIn 2.4s ease-out 0.9s forwards;
+  animation: fadeIn 3.5s ease-out 3s forwards;
 }
-.fade-in-3 {
+.fade-line-3 {
   opacity: 0;
-  animation: fadeIn 2.4s ease-out 1.6s forwards;
+  animation: fadeIn 3.5s ease-out 4.8s forwards;
 }
-.fade-in-slow {
+.fade-name {
   opacity: 0;
-  animation: fadeIn 3s ease-out forwards;
+  animation: fadeIn 3.5s ease-out 6.5s forwards;
 }
 
-/* --- Slideshow crossfade --- */
-@keyframes slideCycle {
-  0%,
-  14% {
-    opacity: 1;
-  }
-  20%,
-  100% {
-    opacity: 0;
-  }
-}
-.slide {
-  opacity: 0;
-  animation: slideCycle 9s infinite;
-}
-
-/* --- Wave scarabocchi --- */
-@keyframes wavePulse {
-  0%,
-  100% {
-    transform: translateY(0) scaleX(1);
-    opacity: 0.75;
-  }
-  50% {
-    transform: translateY(-3px) scaleX(1.02);
-    opacity: 1;
-  }
-}
-.wave {
-  animation: wavePulse 3s ease-in-out infinite;
-  transform-origin: center;
-}
-
-/* --- Cursore X pulsante --- */
-@keyframes pulseX {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-}
-.pulse-x {
-  animation: pulseX 1.8s ease-in-out infinite;
-}
-
-/* --- Ken burns leggero sulla foto hero --- */
 @keyframes kenBurns {
   0% {
     transform: scale(1) translate(0, 0);
@@ -104,16 +52,5 @@ body {
   }
 }
 .ken-burns {
-  animation: kenBurns 22s ease-out forwards;
-}
-
-/* --- Overlay fade out post ENTRA --- */
-@keyframes fadeOut {
-  to {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
-.fade-out {
-  animation: fadeOut 1.2s ease-in forwards;
+  animation: kenBurns 30s ease-out forwards;
 }
