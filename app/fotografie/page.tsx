@@ -10,6 +10,10 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(Observer);
 }
 
+function cldResize(url: string, width: number): string {
+  return url.replace(/w_\d+/, `w_${width}`);
+}
+
 const DISPLAY_NAME: Record<string, string> = {
   "sri-lanka": "Sri Lanka",
   bali: "Bali",
@@ -90,10 +94,12 @@ function ContinentBlock({
             className="group relative aspect-[4/5] overflow-hidden bg-neutral-900 block"
           >
             <img
-              src={t.coverSrc}
+              src={cldResize(t.coverSrc, 700)}
               alt={DISPLAY_NAME[t.slug] ?? t.destination}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               draggable={false}
+              loading={i < 4 ? "eager" : "lazy"}
+              decoding="async"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
             <div
@@ -168,7 +174,11 @@ export default function FotografiePage() {
       wheelSpeed: 1,
       preventDefault: true,
       onChangeY: (self) => {
-        scrollY += self.deltaY * 1.5;
+        const evt = self.event as Event | undefined;
+        const isTouch = !!evt && evt.type.startsWith("touch");
+        // Su touch il segno di deltaY è opposto al wheel → invertiamo per uniformare
+        const delta = isTouch ? -self.deltaY : self.deltaY;
+        scrollY += delta * 1.5;
       },
     });
 

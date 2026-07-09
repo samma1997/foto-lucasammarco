@@ -25,6 +25,10 @@ export default function RootLayout({
       lang="it"
       className={`${ibmPlex.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+      </head>
       <body className="min-h-full bg-black text-white">{children}</body>
     </html>
   );
