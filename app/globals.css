@@ -3,54 +3,13 @@
 @theme inline {
   --color-background: #000000;
   --color-foreground: #ffffff;
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-cormorant);
+  --font-sans: var(--font-mono);
+  --font-mono: var(--font-mono);
 }
 
 html,
 body {
   background: #000000;
   color: #ffffff;
-  font-family: var(--font-inter), Arial, sans-serif;
-  overflow: hidden;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.fade-line-1 {
-  opacity: 0;
-  animation: fadeIn 3.5s ease-out 1.2s forwards;
-}
-.fade-line-2 {
-  opacity: 0;
-  animation: fadeIn 3.5s ease-out 3s forwards;
-}
-.fade-line-3 {
-  opacity: 0;
-  animation: fadeIn 3.5s ease-out 4.8s forwards;
-}
-.fade-name {
-  opacity: 0;
-  animation: fadeIn 3.5s ease-out 6.5s forwards;
-}
-
-@keyframes kenBurns {
-  0% {
-    transform: scale(1) translate(0, 0);
-  }
-  100% {
-    transform: scale(1.08) translate(-1%, -1%);
-  }
-}
-.ken-burns {
-  animation: kenBurns 30s ease-out forwards;
+  font-family: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }

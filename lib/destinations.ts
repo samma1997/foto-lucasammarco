@@ -5769,7 +5769,7 @@ export const trips: Trip[] = [
     continent: "Asia",
     startDate: "2025-05-29",
     endDate: "2025-06-09",
-    coverSrc: "https://res.cloudinary.com/do9hrcwn1/image/upload/c_limit,f_auto,q_auto,w_1200/v1/sammapix/portfolio/japan/01-senso-ji-hozomon-gate-tokyo-japan-red-lantern-crowd",
+    coverSrc: "https://res.cloudinary.com/do9hrcwn1/image/upload/c_limit,f_auto,q_auto,w_1200/v1/sammapix/portfolio/japan/17-japanese-security-guard-arakawa-street-portrait-japan",
     excerpt:
       "Street photography across Tokyo in May 2025: Senso-ji and Asakusa, Ueno, market lanes and the quiet rituals of daily life in Japan.",
     description:
