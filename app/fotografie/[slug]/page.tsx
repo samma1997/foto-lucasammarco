@@ -55,8 +55,18 @@ export default function TripPage() {
     ? trip.photos.filter((p) => p.srcThumb !== trip.coverSrc).slice(0, 40)
     : [];
 
-  // ENTRY — se veniamo da una transizione, salta il fade-in
+  // ENTRY — reset stato transizione + fade in (o skip se veniamo da nav)
   useLayoutEffect(() => {
+    isNavigatingRef.current = false;
+    // reset di qualsiasi stato transform/opacity residuo
+    if (coverImgRef.current)
+      gsap.set(coverImgRef.current, { x: 0, y: 0, scale: 1, opacity: 1 });
+    if (prevPeekImgRef.current)
+      gsap.set(prevPeekImgRef.current, { x: 0, y: 0, scale: 1, opacity: 1 });
+    if (nextPeekImgRef.current)
+      gsap.set(nextPeekImgRef.current, { x: 0, y: 0, scale: 1, opacity: 1 });
+    if (restRef.current) gsap.set(restRef.current, { opacity: 1 });
+
     if (!contentRef.current) return;
     const skip =
       typeof window !== "undefined" &&
@@ -172,10 +182,11 @@ export default function TripPage() {
       navigateTo(nextTrip.slug, "next");
     };
 
+    // Solo touch swipe orizzontale (no wheel/mouse — evita trigger accidentale su scroll verticale)
     const obs = Observer.create({
-      type: "wheel,touch",
+      type: "touch",
       target: window,
-      tolerance: 80,
+      tolerance: 100,
       onLeft: goNext,
       onRight: goPrev,
     });

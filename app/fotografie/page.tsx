@@ -212,10 +212,10 @@ export default function FotografiePage() {
   return (
     <div
       className="fixed inset-0 bg-black text-white overflow-hidden"
-      style={{ fontFamily: "var(--font-inter), Arial, sans-serif" }}
+      style={{ fontFamily: "var(--font-mono), ui-monospace, monospace" }}
     >
-      {/* HEADER — stile home */}
-      <header className="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-6 md:px-10 pt-5 md:pt-6">
+      {/* HEADER — stile home (con fade nero sopra il loop) */}
+      <header className="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-6 md:px-10 pt-5 md:pt-6 pb-6 bg-gradient-to-b from-black via-black/90 to-transparent">
         <Link
           href="/"
           className="flex items-center text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none"

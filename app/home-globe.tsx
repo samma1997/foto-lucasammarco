@@ -66,8 +66,8 @@ export default function HomeGlobe({ isMobile }: { isMobile: boolean }) {
         width={size.w}
         height={size.h}
         backgroundColor="rgba(0,0,0,0)"
-        // Texture custom da Figma (equirectangular 2:1)
-        globeImageUrl="/world-texture.png"
+        // Texture custom da Figma (equirectangular 2:1) — WebP 8k, 350KB
+        globeImageUrl="/world-texture.webp"
         // Fallback material — se PNG non caricato, sfera nera
         globeMaterial={new THREE.MeshBasicMaterial({ color: 0x000000 })}
         showAtmosphere={false}
