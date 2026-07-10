@@ -575,13 +575,13 @@ export default function ChiSono() {
         {/* cornice nera sfumata attorno al video (stile CapCut) — centro pulito */}
         <div
           className="pointer-events-none absolute inset-0 z-10"
-          style={{ boxShadow: "inset 0 0 150px 75px rgba(0,0,0,0.92)" }}
+          style={{ boxShadow: "inset 0 0 220px 130px rgba(0,0,0,0.97)" }}
         />
         <div
           className="pointer-events-none absolute inset-0 z-10"
           style={{
             background:
-              "radial-gradient(ellipse 118% 106% at 50% 50%, transparent 58%, rgba(0,0,0,0.6) 100%)",
+              "radial-gradient(ellipse 108% 98% at 50% 50%, transparent 46%, rgba(0,0,0,0.82) 100%)",
           }}
         />
 
