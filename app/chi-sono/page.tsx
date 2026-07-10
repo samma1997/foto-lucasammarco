@@ -160,9 +160,11 @@ export default function ChiSono() {
     let cw = 0;
     let ch = 0;
 
+    const isMobileView = window.innerWidth < 768;
     const resize = () => {
-      // sorgente 720p → DPR 1 basta e avanza, dimezza il fill-rate = scrub fluido
-      const dpr = 1;
+      // desktop: DPR 1 (sorgente 1280 già nitida). mobile: DPR 2 per non
+      // essere sgranato sui retina (frame mobile a 900px lo reggono)
+      const dpr = isMobileView ? Math.min(window.devicePixelRatio || 1, 2) : 1;
       cw = window.innerWidth;
       ch = window.innerHeight;
       canvas.width = Math.round(cw * dpr);
