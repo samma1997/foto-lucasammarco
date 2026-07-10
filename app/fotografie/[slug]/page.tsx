@@ -112,6 +112,7 @@ export default function TripPage() {
     destroy: () => void;
     start: () => void;
     stop: () => void;
+    resize: () => void;
   } | null>(null);
 
   // Sync ref con state
@@ -265,6 +266,7 @@ export default function TripPage() {
   useEffect(() => {
     let rafId = 0;
     let cancelled = false;
+    let ro: ResizeObserver | null = null;
     (async () => {
       const mod = await import("lenis");
       if (cancelled) return;
@@ -280,6 +282,7 @@ export default function TripPage() {
         destroy: () => void;
         start: () => void;
         stop: () => void;
+        resize: () => void;
       };
       lenisRef.current = lenis;
       const raf = (time: number) => {
@@ -287,10 +290,17 @@ export default function TripPage() {
         rafId = requestAnimationFrame(raf);
       };
       rafId = requestAnimationFrame(raf);
+
+      // FIX blocco scroll: quando la pagina cresce (170 foto lazy che caricano,
+      // layout che si assesta) Lenis deve rimisurare il limite, altrimenti clampa.
+      ro = new ResizeObserver(() => lenis.resize());
+      ro.observe(document.body);
+      lenis.resize();
     })();
     return () => {
       cancelled = true;
       cancelAnimationFrame(rafId);
+      ro?.disconnect();
       lenisRef.current?.destroy();
       lenisRef.current = null;
     };
@@ -304,9 +314,10 @@ export default function TripPage() {
   const displayedTrip = CHRONOLOGICAL[displayedIdx];
   const displayedName =
     DISPLAY_NAME[displayedTrip.slug] ?? displayedTrip.destination;
+  // TUTTE le foto del viaggio, in ordine cronologico (per data, stabile)
   const gridPhotos = displayedTrip.photos
     .filter((p) => p.srcThumb !== displayedTrip.coverSrc)
-    .slice(0, 40);
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">

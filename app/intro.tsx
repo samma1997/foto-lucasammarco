@@ -12,7 +12,7 @@ const useIsomorphicLayoutEffect =
 type Photo = { src: string; alt: string };
 
 const allPhotos: Photo[] = [
-  { src: "/bali-scooter.jpg", alt: "Bali 2026" },
+  { src: "/bali-scooter.webp", alt: "Bali 2026" },
   ...trips.flatMap((t) =>
     t.photos.map((p) => ({ src: p.srcThumb, alt: p.alt }))
   ),
@@ -40,6 +40,13 @@ export default function Intro() {
   });
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
   const textRef = useRef<HTMLDivElement>(null);
+
+  // Preload del mappamondo (chunk JS + texture) durante l'intro → enter fluido
+  useEffect(() => {
+    import("./home-globe");
+    const img = new window.Image();
+    img.src = "/world-texture.webp";
+  }, []);
 
   useEffect(() => {
     const update = () => {

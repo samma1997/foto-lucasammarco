@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import PageLoader from "./page-loader";
 
 const ibmPlex = IBM_Plex_Mono({
   variable: "--font-mono",
@@ -29,7 +30,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
       </head>
-      <body className="min-h-full bg-black text-white">{children}</body>
+      <body className="min-h-full bg-black text-white">
+        <PageLoader />
+        {children}
+      </body>
     </html>
   );
 }

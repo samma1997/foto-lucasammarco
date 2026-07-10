@@ -43,115 +43,8 @@ const GRAIN =
     `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`
   );
 
-/* -------- Barra scroll + lettura % (solo dev, non invasiva) -------- */
-function DevScrollHUD() {
-  const [on, setOn] = useState(true);
-  const [prog, setProg] = useState(0); // 0..1 scroll
-  const [ptr, setPtr] = useState<{ x: number; y: number } | null>(null);
-
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => {
-      if (e.key === "g" || e.key === "G") setOn((v) => !v);
-    };
-    let raf = 0;
-    const upd = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      setProg(max > 0 ? window.scrollY / max : 0);
-      raf = 0;
-    };
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(upd);
-    };
-    const onMove = (e: PointerEvent) =>
-      setPtr({
-        x: Math.round((e.clientX / window.innerWidth) * 100),
-        y: Math.round((e.clientY / window.innerHeight) * 100),
-      });
-    window.addEventListener("keydown", k);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("pointermove", onMove, { passive: true });
-    upd();
-    return () => {
-      window.removeEventListener("keydown", k);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("pointermove", onMove);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  const pct = Math.round(prog * 100);
-  const frame = Math.min(FRAME_COUNT, Math.round(prog * (FRAME_COUNT - 1)) + 1);
-  const ticks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-
-  if (!on) {
-    return (
-      <button
-        onClick={() => setOn(true)}
-        className="pointer-events-auto fixed bottom-3 right-3 z-[600] rounded bg-white/10 px-2 py-1 text-[10px] tracking-widest text-white/70 backdrop-blur"
-      >
-        HUD (g)
-      </button>
-    );
-  }
-
-  return (
-    <div className="pointer-events-none fixed inset-0 z-[600]">
-      {/* readout in alto */}
-      <div className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-black/80 px-4 py-1.5 text-[12px] font-medium tabular-nums text-white ring-1 ring-white/15">
-        <span className="text-cyan-300">SCROLL {pct}%</span>
-        <span className="mx-2 text-white/30">·</span>
-        <span>FRAME {String(frame).padStart(3, "0")}/{FRAME_COUNT}</span>
-        <span className="mx-2 text-white/30">·</span>
-        <span className="text-white/60">
-          POS {ptr ? `x${ptr.x} y${ptr.y}` : "—"}
-        </span>
-      </div>
-
-      {/* barra verticale scroll */}
-      <div className="absolute right-5 top-1/2 h-[72vh] -translate-y-1/2">
-        <div className="relative mx-auto h-full w-[3px] rounded bg-white/15">
-          {/* riempimento */}
-          <div
-            className="absolute left-0 top-0 w-full rounded bg-cyan-300/80"
-            style={{ height: pct + "%" }}
-          />
-          {/* tacche */}
-          {ticks.map((t) => (
-            <div
-              key={t}
-              className="absolute right-full flex -translate-y-1/2 items-center gap-1 pr-2"
-              style={{ top: t + "%" }}
-            >
-              <span className="rounded bg-black/70 px-1 text-[9px] tabular-nums text-white/55">
-                {t}
-              </span>
-              <span className="block h-px w-2 bg-white/25" />
-            </div>
-          ))}
-          {/* marker corrente */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2"
-            style={{ top: pct + "%" }}
-          >
-            <div className="relative">
-              <div className="h-2.5 w-2.5 rounded-full bg-cyan-300 ring-2 ring-black" />
-              <span className="absolute right-full top-1/2 mr-2 -translate-y-1/2 rounded bg-cyan-300 px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-black">
-                {pct}%
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-black/70 px-3 py-1 text-[10px] tracking-widest text-white/70">
-        scrolla e leggi la % · dimmi entrata→uscita di ogni testo · [g] nascondi
-      </div>
-    </div>
-  );
-}
 
 export default function ChiSono() {
-  const isDev = process.env.NODE_ENV !== "production";
   const stageRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -171,8 +64,16 @@ export default function ChiSono() {
   const beat5 = useRef<HTMLDivElement>(null);
   const beat6 = useRef<HTMLDivElement>(null);
 
-  const [progress, setProgress] = useState(0); // 0..1 loader
   const [ready, setReady] = useState(false);
+  const [mobile, setMobile] = useState(false);
+
+  // rileva mobile per alleggerire la maschera al centro (bordi neri restano)
+  useEffect(() => {
+    const u = () => setMobile(window.innerWidth < 768);
+    u();
+    window.addEventListener("resize", u);
+    return () => window.removeEventListener("resize", u);
+  }, []);
 
   /* ---------- 1. Preload di tutti i frame ---------- */
   const imagesRef = useRef<HTMLImageElement[]>([]);
@@ -183,7 +84,6 @@ export default function ChiSono() {
     const done = () => {
       loaded++;
       if (cancelled) return;
-      setProgress(loaded / FRAME_COUNT);
       if (loaded === FRAME_COUNT) setReady(true);
     };
     for (let i = 0; i < FRAME_COUNT; i++) {
@@ -384,7 +284,7 @@ export default function ChiSono() {
           anticipatePin: 1,
           invalidateOnRefresh: true,
           onUpdate: (self) => {
-            const show = self.progress > 0.76;
+            const show = self.progress > 0.88;
             marquee.forEach((t) => (show ? t.play() : t.pause()));
           },
         },
@@ -510,18 +410,18 @@ export default function ChiSono() {
       // beatIn(beat5.current!, 70);
       // beatOut(beat5.current!, 83);
 
-      // FADE TO BLACK — il video sfuma al nero dal ~75%
+      // FADE TO BLACK — il video si scurisce dall'80% ed è nero al ~90%
       tl.to(
         blackoutRef.current!,
-        { autoAlpha: 1, duration: 8, ease: "power1.in" },
-        75
+        { autoAlpha: 1, duration: 10, ease: "power1.in" },
+        80
       );
 
-      // MURO DI FOTO — entra a 77% sopra il nero e resta fino alla fine
+      // MURO DI FOTO — entra dopo il nero (~89%) e resta fino alla fine
       tl.to(
         wallRef.current!,
-        { autoAlpha: 1, duration: 7, ease: "power2.out" },
-        77
+        { autoAlpha: 1, duration: 8, ease: "power2.out" },
+        89
       );
 
       // BEAT 6 — CTA: nel muro di foto (vedi wallRef)
@@ -547,17 +447,9 @@ export default function ChiSono() {
 
   return (
     <main className="bg-black text-white">
-      {/* ---------- LOADER ---------- */}
-      {!ready && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black">
-          <div className="flex flex-col items-center gap-3">
-            <span className={label}>Fotografia in movimento</span>
-            <span className="text-white/40 text-[0.62rem] tracking-[0.35em] tabular-nums">
-              {Math.round(progress * 100).toString().padStart(2, "0")}%
-            </span>
-          </div>
-        </div>
-      )}
+      {/* copertura nera finché i frame non sono pronti (nessuna linea:
+          il caricamento è la frase globale) */}
+      {!ready && <div className="fixed inset-0 z-[999] bg-black" />}
 
       {/* ---------- STAGE (viene pinnato) ---------- */}
       <section
@@ -572,16 +464,22 @@ export default function ChiSono() {
           aria-label="Luca Sammarco fotografa in viaggio, in movimento"
         />
 
-        {/* cornice nera sfumata attorno al video (stile CapCut) — centro pulito */}
+        {/* cornice nera sfumata attorno al video (stile CapCut) — su mobile
+            maschera più leggera al centro così il soggetto si vede bene */}
         <div
           className="pointer-events-none absolute inset-0 z-10"
-          style={{ boxShadow: "inset 0 0 220px 130px rgba(0,0,0,0.97)" }}
+          style={{
+            boxShadow: mobile
+              ? "inset 0 0 120px 24px rgba(0,0,0,0.82)"
+              : "inset 0 0 220px 130px rgba(0,0,0,0.97)",
+          }}
         />
         <div
           className="pointer-events-none absolute inset-0 z-10"
           style={{
-            background:
-              "radial-gradient(ellipse 108% 98% at 50% 50%, transparent 46%, rgba(0,0,0,0.82) 100%)",
+            background: mobile
+              ? "radial-gradient(ellipse 135% 120% at 50% 47%, transparent 62%, rgba(0,0,0,0.6) 100%)"
+              : "radial-gradient(ellipse 108% 98% at 50% 50%, transparent 46%, rgba(0,0,0,0.82) 100%)",
           }}
         />
 
@@ -616,13 +514,13 @@ export default function ChiSono() {
         >
           <p className={`${label} mb-4`}>Luca Sammarco — Fotografo</p>
           <h1
-            className="font-medium leading-[0.98] tracking-[-0.01em]"
-            style={{ fontSize: "clamp(1.9rem, 8vw, 4.4rem)" }}
+            className="font-medium leading-[1.02] tracking-[-0.01em]"
+            style={{ fontSize: "clamp(1.4rem, 7vw, 4rem)" }}
           >
-            <span className="block overflow-hidden">
+            <span className="block">
               <span className="line block will-change-transform">Fotografia</span>
             </span>
-            <span className="block overflow-hidden">
+            <span className="block">
               <span className="line block will-change-transform">in movimento</span>
             </span>
           </h1>
@@ -635,7 +533,7 @@ export default function ChiSono() {
         <div
           ref={beat3}
           style={{ textShadow: SHADOW }}
-          className="pointer-events-none absolute z-30 right-6 md:right-[7vw] bottom-[14vh] md:bottom-[18vh] max-w-[80vw] md:max-w-[34vw] text-right"
+          className="pointer-events-none absolute z-30 right-6 md:right-[7vw] bottom-[24vh] md:bottom-[18vh] max-w-[80vw] md:max-w-[34vw] text-right"
         >
           <p className={`${label} mb-3`}>Il metodo</p>
           <p className="font-light leading-[1.22] tracking-[0.01em] text-[4.5vw] md:text-[1.7rem]">
@@ -649,7 +547,7 @@ export default function ChiSono() {
           ref={photosRef}
           className="pointer-events-none absolute inset-0 z-30"
         >
-          <div className="absolute left-6 md:left-[7vw] bottom-[8vh] md:bottom-[9vh] max-w-[74vw] md:max-w-[30vw]">
+          <div className="absolute left-6 md:left-[7vw] bottom-[22vh] md:bottom-[9vh] max-w-[74vw] md:max-w-[30vw]">
             <div className="ptitle" style={{ textShadow: SHADOW }}>
               <p className={`${label} mb-3`}>Il lavoro · Asia</p>
               <p
@@ -660,17 +558,6 @@ export default function ChiSono() {
                 <br />alla volta.
               </p>
             </div>
-
-            <div className="pic mt-6 md:mt-7 relative w-[48vw] md:w-[15vw] aspect-[3/4] overflow-hidden rounded-md bg-neutral-900 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.85)] ring-1 ring-white/10">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={PHOTOS[0].src}
-                alt={PHOTOS[0].alt}
-                className="h-full w-full object-cover"
-                draggable={false}
-                loading="eager"
-              />
-            </div>
           </div>
         </div>
 
@@ -678,7 +565,7 @@ export default function ChiSono() {
         <div
           ref={beat4}
           style={{ textShadow: SHADOW }}
-          className="pointer-events-none absolute z-30 left-1/2 -translate-x-1/2 bottom-[12vh] md:bottom-[14vh] w-[90vw] md:w-auto text-center"
+          className="pointer-events-none absolute z-30 left-1/2 -translate-x-1/2 bottom-[22vh] md:bottom-[14vh] w-[90vw] md:w-auto text-center"
         >
           <p className={`${label} mb-4`}>Asia · 2024—2026</p>
           <p className="font-light leading-[1.12] tracking-[0.01em] text-[6vw] md:text-[2.8vw]">
@@ -792,7 +679,7 @@ export default function ChiSono() {
           />
 
           {/* CTA */}
-          <div className="absolute inset-x-0 bottom-[10vh] flex flex-col items-center gap-5 text-center">
+          <div className="absolute inset-x-0 bottom-[18vh] md:bottom-[12vh] flex flex-col items-center gap-5 text-center">
             <p className={label}>Esplora il mio lavoro</p>
             <Link
               href="/fotografie"
@@ -810,23 +697,33 @@ export default function ChiSono() {
         />
       </section>
 
-      {/* header minimale (torna alla home) */}
+      {/* header — allineato come in home (nome sx + nav impilato dx) */}
       <header className="pointer-events-none fixed top-0 left-0 right-0 z-[60] flex items-start justify-between px-6 md:px-10 pt-5 md:pt-6">
         <Link
           href="/"
-          className="pointer-events-auto text-white text-xs md:text-sm uppercase tracking-[0.15em] font-medium hover:opacity-80 transition-opacity"
+          className="pointer-events-auto flex items-center text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none"
+          style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}
         >
           Luca Sammarco
         </Link>
-        <Link
-          href="/fotografie"
-          className="pointer-events-auto text-white/80 text-xs md:text-sm tracking-[0.05em] hover:opacity-80 transition-opacity"
+        <nav
+          className="pointer-events-auto flex flex-col items-end gap-1.5 text-white/80 text-xs md:text-sm"
+          style={{ fontFamily: "var(--font-mono)" }}
         >
-          Fotografie
-        </Link>
+          <Link
+            href="/chi-sono"
+            className="transition-opacity hover:opacity-80 tracking-[0.05em]"
+          >
+            Chi sono
+          </Link>
+          <Link
+            href="/fotografie"
+            className="transition-opacity hover:opacity-80 tracking-[0.05em]"
+          >
+            Fotografie
+          </Link>
+        </nav>
       </header>
-
-      {isDev && <DevScrollHUD />}
     </main>
   );
 }

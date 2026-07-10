@@ -11,7 +11,7 @@ const Globe = dynamic(() => import("./home-globe"), { ssr: false });
 type Photo = { src: string; alt: string };
 
 const allPhotos: Photo[] = [
-  { src: "/bali-scooter.jpg", alt: "Bali 2026" },
+  { src: "/bali-scooter.webp", alt: "Bali 2026" },
   ...trips.flatMap((t) => t.photos.map((p) => ({ src: p.srcThumb, alt: p.alt }))),
 ];
 
