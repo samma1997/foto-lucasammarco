@@ -12,8 +12,9 @@ import { trips } from "@/lib/destinations";
 /* ------------------------------------------------------------------ */
 
 const FRAME_COUNT = 151;
-const framePath = (i: number) =>
-  `/motion-frames/frame_${String(i + 1).padStart(3, "0")}.webp`;
+// set desktop (1280px) o mobile (640px, più leggero da decodificare/disegnare)
+const framePath = (i: number, m: boolean) =>
+  `/motion-frames${m ? "-m" : ""}/frame_${String(i + 1).padStart(3, "0")}.webp`;
 
 // Foto reali dai viaggi (Cloudinary) per il momento showcase
 const CDN = "https://res.cloudinary.com/do9hrcwn1/image/upload/c_limit,f_auto,q_auto,w_600/v1/sammapix/portfolio/";
@@ -79,6 +80,7 @@ export default function ChiSono() {
   const imagesRef = useRef<HTMLImageElement[]>([]);
   useEffect(() => {
     let cancelled = false;
+    const isMobile = window.innerWidth < 768; // set frame più leggero su mobile
     const imgs: HTMLImageElement[] = new Array(FRAME_COUNT);
     let loaded = 0;
     const done = () => {
@@ -94,7 +96,7 @@ export default function ChiSono() {
         else done();
       };
       img.onerror = done;
-      img.src = framePath(i);
+      img.src = framePath(i, isMobile);
       imgs[i] = img;
     }
     imagesRef.current = imgs;
@@ -153,7 +155,7 @@ export default function ChiSono() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
     let cw = 0;
     let ch = 0;
@@ -189,7 +191,7 @@ export default function ChiSono() {
         dy = 0;
         dx = (cw - dw) / 2;
       }
-      ctx.clearRect(0, 0, cw, ch);
+      // niente clearRect: il cover-fit riempie sempre tutto il canvas
       ctx.drawImage(img, dx, dy, dw, dh);
       // counter + progress dot
       const p = idx / (FRAME_COUNT - 1);
