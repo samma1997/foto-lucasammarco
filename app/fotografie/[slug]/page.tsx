@@ -50,22 +50,34 @@ export default function TripPage() {
   const nextPeekImgRef = useRef<HTMLDivElement>(null);
   const restRef = useRef<HTMLDivElement>(null);
   const isNavigatingRef = useRef(false);
+  const activeTimelineRef = useRef<gsap.core.Timeline | null>(null);
+  const lenisRef = useRef<{
+    raf: (t: number) => void;
+    destroy: () => void;
+    start: () => void;
+    stop: () => void;
+  } | null>(null);
 
   const gridPhotos = trip
     ? trip.photos.filter((p) => p.srcThumb !== trip.coverSrc).slice(0, 40)
     : [];
 
-  // ENTRY — reset stato transizione + fade in (o skip se veniamo da nav)
+  // ENTRY — reset stato transizione + fade in (o subtle settle se veniamo da nav)
   useLayoutEffect(() => {
     isNavigatingRef.current = false;
-    // reset di qualsiasi stato transform/opacity residuo
-    if (coverImgRef.current)
-      gsap.set(coverImgRef.current, { x: 0, y: 0, scale: 1, opacity: 1 });
-    if (prevPeekImgRef.current)
-      gsap.set(prevPeekImgRef.current, { x: 0, y: 0, scale: 1, opacity: 1 });
-    if (nextPeekImgRef.current)
-      gsap.set(nextPeekImgRef.current, { x: 0, y: 0, scale: 1, opacity: 1 });
-    if (restRef.current) gsap.set(restRef.current, { opacity: 1 });
+    activeTimelineRef.current?.kill();
+    activeTimelineRef.current = null;
+
+    // Kill qualsiasi tween residuo sui refs → no stato residuo tra route
+    const refs = [
+      coverImgRef.current,
+      prevPeekImgRef.current,
+      nextPeekImgRef.current,
+      restRef.current,
+      contentRef.current,
+    ].filter(Boolean) as HTMLElement[];
+    gsap.killTweensOf(refs);
+    refs.forEach((el) => gsap.set(el, { clearProps: "transform,opacity" }));
 
     if (!contentRef.current) return;
     const skip =
@@ -73,15 +85,68 @@ export default function TripPage() {
       sessionStorage.getItem("foto-skip-intro") === "1";
     if (skip) {
       sessionStorage.removeItem("foto-skip-intro");
-      gsap.set(contentRef.current, { opacity: 1, y: 0 });
+      // Subtle settle → nasconde eventuale flash di caricamento route
+      gsap.fromTo(
+        contentRef.current,
+        { opacity: 0.75, y: -4 },
+        { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }
+      );
       return;
     }
     gsap.fromTo(
       contentRef.current,
       { opacity: 0, y: 12 },
-      { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
+      { opacity: 1, y: 0, duration: 0.55, ease: "power2.out" }
     );
   }, [slug]);
+
+  // Cleanup timeline su unmount
+  useEffect(() => {
+    return () => {
+      activeTimelineRef.current?.kill();
+    };
+  }, []);
+
+  // Lenis smooth scroll → feel editoriale/silky per scroll nativo verticale
+  useEffect(() => {
+    let rafId = 0;
+    let cancelled = false;
+    (async () => {
+      const mod = await import("lenis");
+      if (cancelled) return;
+      const LenisCtor = mod.default;
+      const lenis = new LenisCtor({
+        duration: 1.15,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        smoothWheel: true,
+        wheelMultiplier: 1,
+        touchMultiplier: 1.6,
+      }) as unknown as {
+        raf: (t: number) => void;
+        destroy: () => void;
+        start: () => void;
+        stop: () => void;
+      };
+      lenisRef.current = lenis;
+      const raf = (time: number) => {
+        lenis.raf(time);
+        rafId = requestAnimationFrame(raf);
+      };
+      rafId = requestAnimationFrame(raf);
+    })();
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+      lenisRef.current?.destroy();
+      lenisRef.current = null;
+    };
+  }, []);
+
+  // Stop Lenis quando lightbox aperto → no scroll dietro alla modale
+  useEffect(() => {
+    if (lightboxIndex !== null) lenisRef.current?.stop();
+    else lenisRef.current?.start();
+  }, [lightboxIndex]);
 
   // Ordine cronologico + prev/next (wrap-around)
   const chronological = trip
@@ -129,41 +194,56 @@ export default function TripPage() {
         coverRect.top + coverRect.height / 2 - (peekRect.top + peekRect.height / 2);
       const peekScale = coverRect.width / peekRect.width;
 
+      // Kill timeline precedente se esiste (utente clicca durante altra animazione)
+      activeTimelineRef.current?.kill();
+
       const tl = gsap.timeline({
+        defaults: { ease: "power3.inOut", force3D: true },
         onComplete: () => {
           sessionStorage.setItem("foto-skip-intro", "1");
           router.push(`/fotografie/${targetSlug}`);
         },
       });
+      activeTimelineRef.current = tl;
 
+      // Cover shrink → posizione del peek cliccato
       tl.to(
         coverImgRef.current,
         {
           x: coverDx,
           y: coverDy,
           scale: coverScale,
-          duration: 0.7,
-          ease: "power2.inOut",
+          duration: 0.85,
         },
         0
       );
+      // Peek cliccato grow → centro (posizione della cover)
       tl.to(
         targetPeekRef.current,
         {
           x: peekDx,
           y: peekDy,
           scale: peekScale,
-          duration: 0.7,
-          ease: "power2.inOut",
           zIndex: 10,
+          duration: 0.85,
         },
         0
       );
+      // Altro peek fade + subtle scale-down
       if (otherPeekRef.current) {
-        tl.to(otherPeekRef.current, { opacity: 0, duration: 0.35 }, 0);
+        tl.to(
+          otherPeekRef.current,
+          { opacity: 0, scale: 0.9, duration: 0.45, ease: "power2.in" },
+          0
+        );
       }
+      // Rest (meta + grid + footer) fade + drift verticale sottile
       if (restRef.current) {
-        tl.to(restRef.current, { opacity: 0, duration: 0.35 }, 0);
+        tl.to(
+          restRef.current,
+          { opacity: 0, y: 20, duration: 0.5, ease: "power2.in" },
+          0
+        );
       }
     },
     [router]

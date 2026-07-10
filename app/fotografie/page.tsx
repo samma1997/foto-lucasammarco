@@ -188,10 +188,16 @@ export default function FotografiePage() {
       return m;
     };
 
-    const tick = () => {
+    // Smoothing FPS-independent → silky su qualunque refresh rate
+    let lastT = performance.now();
+    const tick = (now: number) => {
       if (!running) return;
+      const dt = Math.min(now - lastT, 64); // clamp per gap tab switch
+      lastT = now;
       if (repHeight > 0) {
-        currentY += (scrollY - currentY) * 0.1;
+        // half-life ~120ms → damping smooth stile Lenis
+        const smoothing = 1 - Math.pow(0.001, dt / 120);
+        currentY += (scrollY - currentY) * smoothing;
         const y = -wrap(currentY);
         track.style.transform = `translate3d(0, ${y}px, 0)`;
       }
