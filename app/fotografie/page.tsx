@@ -137,36 +137,34 @@ export default function FotografiePage() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
-  const lenisRef = useRef<{
-    raf: (t: number) => void;
-    destroy: () => void;
-  } | null>(null);
 
-  // Loop infinito via native scroll + teleport pattern
+  // Loop infinito: 3 copie + teleport basato sul CENTRO visibile
+  // → funziona anche con viewport più alto di una copy
   useLayoutEffect(() => {
     const scroller = scrollerRef.current;
-    const content = contentRef.current;
     const copy = copyRef.current;
-    if (!scroller || !content || !copy) return;
+    if (!scroller || !copy) return;
 
-    let repH = copy.offsetHeight;
+    let repH = 0;
     let raf = 0;
+    let centered = false;
 
     const measure = () => {
       const h = copy.offsetHeight;
       if (h > 0) repH = h;
-      // Se lo scroll è ancora a 0 all'inizio, centra sul copy di mezzo
-      if (scroller.scrollTop < repH * 0.5) {
+      // Centra sulla copy di mezzo solo la prima volta valida
+      if (!centered && repH > 0) {
         scroller.scrollTop = repH;
+        centered = true;
       }
     };
 
     const ro = new ResizeObserver(() => measure());
     ro.observe(copy);
-    // primo measure + posiziona al copy centrale
     requestAnimationFrame(measure);
+    // secondo measure dopo che le immagini si sono caricate
+    setTimeout(measure, 300);
 
-    // Teleport quando ci avviciniamo ai bordi
     let ticking = false;
     const onScroll = () => {
       if (ticking || repH <= 0) return;
@@ -174,9 +172,12 @@ export default function FotografiePage() {
       raf = requestAnimationFrame(() => {
         ticking = false;
         const st = scroller.scrollTop;
-        if (st < repH * 0.5) {
+        const viewH = scroller.clientHeight;
+        const center = st + viewH / 2;
+        // target: centro visibile dentro la copy di mezzo [repH, 2*repH]
+        if (center < repH) {
           scroller.scrollTop = st + repH;
-        } else if (st > repH * (NUM_COPIES - 0.5)) {
+        } else if (center > 2 * repH) {
           scroller.scrollTop = st - repH;
         }
       });
@@ -187,43 +188,6 @@ export default function FotografiePage() {
       scroller.removeEventListener("scroll", onScroll);
       ro.disconnect();
       cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  // Lenis smooth scroll sul wrapper
-  useEffect(() => {
-    const scroller = scrollerRef.current;
-    const content = contentRef.current;
-    if (!scroller || !content) return;
-
-    let rafId = 0;
-    let cancelled = false;
-    (async () => {
-      const mod = await import("lenis");
-      if (cancelled) return;
-      const LenisCtor = mod.default;
-      const lenis = new LenisCtor({
-        wrapper: scroller,
-        content,
-        duration: 1.1,
-        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        smoothWheel: true,
-        wheelMultiplier: 1,
-        touchMultiplier: 1.4,
-      }) as unknown as { raf: (t: number) => void; destroy: () => void };
-      lenisRef.current = lenis;
-      const raf = (time: number) => {
-        lenis.raf(time);
-        rafId = requestAnimationFrame(raf);
-      };
-      rafId = requestAnimationFrame(raf);
-    })();
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(rafId);
-      lenisRef.current?.destroy();
-      lenisRef.current = null;
     };
   }, []);
 
