@@ -1,11 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import gsap from "gsap";
 import { Observer } from "gsap/Observer";
-import { trips, getTripBySlug, type TripPhoto } from "@/lib/destinations";
+import { trips, type TripPhoto } from "@/lib/destinations";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(Observer);
@@ -36,21 +42,66 @@ function fmtMonth(d: string) {
 
 const SERIF = "var(--font-mono), ui-monospace, monospace";
 
+// Ordine cronologico stabile (tutti i viaggi)
+const CHRONOLOGICAL = [...trips].sort((a, b) =>
+  a.startDate.localeCompare(b.startDate),
+);
+const N = CHRONOLOGICAL.length;
+
+// Distanza signed con wrap-around
+function wrapDist(d: number) {
+  if (d > N / 2) d -= N;
+  if (d < -N / 2) d += N;
+  return d;
+}
+
+// Layout per slot in base alla distanza signed dal centro
+function slotLayout(dist: number, isMobile: boolean) {
+  const abs = Math.abs(dist);
+  if (dist === 0)
+    return { x: 0, scale: 1, opacity: 1, zIndex: 20, pe: "auto" as const };
+  if (abs === 1)
+    return {
+      x: dist * (isMobile ? 58 : 38),
+      scale: isMobile ? 0.36 : 0.42,
+      opacity: 0.65,
+      zIndex: 10,
+      pe: "auto" as const,
+    };
+  if (abs === 2)
+    return {
+      x: dist * (isMobile ? 95 : 72),
+      scale: 0.3,
+      opacity: 0,
+      zIndex: 5,
+      pe: "none" as const,
+    };
+  return {
+    x: dist * 110,
+    scale: 0.3,
+    opacity: 0,
+    zIndex: 0,
+    pe: "none" as const,
+  };
+}
+
 export default function TripPage() {
   const params = useParams();
-  const router = useRouter();
-  const slug = String(params?.slug ?? "");
-  const trip = getTripBySlug(slug);
+  const initialSlug = String(params?.slug ?? "");
+  const initialIdx = Math.max(
+    0,
+    CHRONOLOGICAL.findIndex((t) => t.slug === initialSlug),
+  );
 
+  const [currentIdx, setCurrentIdx] = useState(initialIdx);
+  const [displayedIdx, setDisplayedIdx] = useState(initialIdx);
+  const [isMobile, setIsMobile] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
 
-  const contentRef = useRef<HTMLDivElement>(null);
-  const coverImgRef = useRef<HTMLDivElement>(null);
-  const prevPeekImgRef = useRef<HTMLDivElement>(null);
-  const nextPeekImgRef = useRef<HTMLDivElement>(null);
+  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const restRef = useRef<HTMLDivElement>(null);
-  const isNavigatingRef = useRef(false);
-  const activeTimelineRef = useRef<gsap.core.Timeline | null>(null);
+  const isTransitioningRef = useRef(false);
   const lenisRef = useRef<{
     raf: (t: number) => void;
     destroy: () => void;
@@ -58,56 +109,133 @@ export default function TripPage() {
     stop: () => void;
   } | null>(null);
 
-  const gridPhotos = trip
-    ? trip.photos.filter((p) => p.srcThumb !== trip.coverSrc).slice(0, 40)
-    : [];
-
-  // ENTRY — reset stato transizione + fade in (o subtle settle se veniamo da nav)
-  useLayoutEffect(() => {
-    isNavigatingRef.current = false;
-    activeTimelineRef.current?.kill();
-    activeTimelineRef.current = null;
-
-    // Kill qualsiasi tween residuo sui refs → no stato residuo tra route
-    const refs = [
-      coverImgRef.current,
-      prevPeekImgRef.current,
-      nextPeekImgRef.current,
-      restRef.current,
-      contentRef.current,
-    ].filter(Boolean) as HTMLElement[];
-    gsap.killTweensOf(refs);
-    refs.forEach((el) => gsap.set(el, { clearProps: "transform,opacity" }));
-
-    if (!contentRef.current) return;
-    const skip =
-      typeof window !== "undefined" &&
-      sessionStorage.getItem("foto-skip-intro") === "1";
-    if (skip) {
-      sessionStorage.removeItem("foto-skip-intro");
-      // Subtle settle → nasconde eventuale flash di caricamento route
-      gsap.fromTo(
-        contentRef.current,
-        { opacity: 0.75, y: -4 },
-        { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }
-      );
-      return;
-    }
-    gsap.fromTo(
-      contentRef.current,
-      { opacity: 0, y: 12 },
-      { opacity: 1, y: 0, duration: 0.55, ease: "power2.out" }
-    );
-  }, [slug]);
-
-  // Cleanup timeline su unmount
+  // Mobile detection
   useEffect(() => {
-    return () => {
-      activeTimelineRef.current?.kill();
-    };
+    const update = () => setIsMobile(window.innerWidth < 768);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Lenis smooth scroll → feel editoriale/silky per scroll nativo verticale
+  // Posiziona slot in base a currentIdx
+  const positionSlides = useCallback(
+    (animate: boolean) => {
+      slideRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const dist = wrapDist(i - currentIdx);
+        const layout = slotLayout(dist, isMobile);
+        const target = {
+          x: `${layout.x}vw`,
+          scale: layout.scale,
+          opacity: layout.opacity,
+          zIndex: layout.zIndex,
+        };
+        if (animate) {
+          gsap.to(el, {
+            ...target,
+            duration: 0.85,
+            ease: "power3.inOut",
+          });
+        } else {
+          gsap.set(el, target);
+        }
+        el.style.pointerEvents = layout.pe;
+      });
+    },
+    [currentIdx, isMobile],
+  );
+
+  // Initial set (no animate) + fade in su mount
+  useLayoutEffect(() => {
+    positionSlides(false);
+    setMounted(true);
+  }, [positionSlides]);
+
+  // Animate on currentIdx change + URL sync
+  useEffect(() => {
+    if (!mounted) return;
+    positionSlides(true);
+    const newSlug = CHRONOLOGICAL[currentIdx].slug;
+    window.history.replaceState(null, "", `/fotografie/${newSlug}`);
+  }, [currentIdx, mounted, positionSlides]);
+
+  // Sync displayedIdx dopo il fade-out di meta+grid
+  useEffect(() => {
+    if (currentIdx === displayedIdx) return;
+    isTransitioningRef.current = true;
+    const rest = restRef.current;
+    if (!rest) {
+      setDisplayedIdx(currentIdx);
+      isTransitioningRef.current = false;
+      return;
+    }
+    gsap.to(rest, {
+      opacity: 0,
+      y: 10,
+      duration: 0.28,
+      ease: "power2.in",
+      onComplete: () => {
+        setDisplayedIdx(currentIdx);
+        isTransitioningRef.current = false;
+      },
+    });
+  }, [currentIdx, displayedIdx]);
+
+  // Fade rest back in quando displayedIdx cambia (nuovo contenuto)
+  useLayoutEffect(() => {
+    const rest = restRef.current;
+    if (!rest) return;
+    gsap.fromTo(
+      rest,
+      { opacity: 0, y: 10 },
+      { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
+    );
+  }, [displayedIdx]);
+
+  // Nav
+  const goPrev = useCallback(() => {
+    if (isTransitioningRef.current || lightboxIndex !== null) return;
+    setCurrentIdx((i) => (i - 1 + N) % N);
+  }, [lightboxIndex]);
+
+  const goNext = useCallback(() => {
+    if (isTransitioningRef.current || lightboxIndex !== null) return;
+    setCurrentIdx((i) => (i + 1) % N);
+  }, [lightboxIndex]);
+
+  const goToSlot = useCallback(
+    (targetIdx: number) => {
+      if (isTransitioningRef.current || lightboxIndex !== null) return;
+      const dist = wrapDist(targetIdx - currentIdx);
+      // solo slot ±1 sono cliccabili (per evitare salti grossi)
+      if (dist === 1) goNext();
+      else if (dist === -1) goPrev();
+    },
+    [currentIdx, goNext, goPrev, lightboxIndex],
+  );
+
+  // Swipe/drag (touch+pointer) + tastiera
+  useEffect(() => {
+    const obs = Observer.create({
+      type: "touch,pointer",
+      target: window,
+      tolerance: 80,
+      onLeft: goNext,
+      onRight: goPrev,
+    });
+    const onKey = (e: KeyboardEvent) => {
+      if (lightboxIndex !== null) return;
+      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") goNext();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      obs.kill();
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [goPrev, goNext, lightboxIndex]);
+
+  // Lenis smooth scroll
   useEffect(() => {
     let rafId = 0;
     let cancelled = false;
@@ -142,172 +270,17 @@ export default function TripPage() {
     };
   }, []);
 
-  // Stop Lenis quando lightbox aperto → no scroll dietro alla modale
   useEffect(() => {
     if (lightboxIndex !== null) lenisRef.current?.stop();
     else lenisRef.current?.start();
   }, [lightboxIndex]);
 
-  // Ordine cronologico + prev/next (wrap-around)
-  const chronological = trip
-    ? [...trips].sort((a, b) => a.startDate.localeCompare(b.startDate))
-    : [];
-  const currentIdx = trip
-    ? chronological.findIndex((t) => t.slug === trip.slug)
-    : -1;
-  const totalTrips = chronological.length;
-  const prevTrip = trip
-    ? chronological[(currentIdx - 1 + totalTrips) % totalTrips]
-    : null;
-  const nextTrip = trip
-    ? chronological[(currentIdx + 1) % totalTrips]
-    : null;
-
-  const navigateTo = useCallback(
-    (targetSlug: string, direction: "prev" | "next") => {
-      if (isNavigatingRef.current) return;
-      isNavigatingRef.current = true;
-
-      const targetPeekRef =
-        direction === "prev" ? prevPeekImgRef : nextPeekImgRef;
-      const otherPeekRef =
-        direction === "prev" ? nextPeekImgRef : prevPeekImgRef;
-
-      if (!coverImgRef.current || !targetPeekRef.current) {
-        sessionStorage.setItem("foto-skip-intro", "1");
-        router.push(`/fotografie/${targetSlug}`);
-        return;
-      }
-
-      const coverRect = coverImgRef.current.getBoundingClientRect();
-      const peekRect = targetPeekRef.current.getBoundingClientRect();
-
-      const coverDx =
-        peekRect.left + peekRect.width / 2 - (coverRect.left + coverRect.width / 2);
-      const coverDy =
-        peekRect.top + peekRect.height / 2 - (coverRect.top + coverRect.height / 2);
-      const coverScale = peekRect.width / coverRect.width;
-
-      const peekDx =
-        coverRect.left + coverRect.width / 2 - (peekRect.left + peekRect.width / 2);
-      const peekDy =
-        coverRect.top + coverRect.height / 2 - (peekRect.top + peekRect.height / 2);
-      const peekScale = coverRect.width / peekRect.width;
-
-      // Kill timeline precedente se esiste (utente clicca durante altra animazione)
-      activeTimelineRef.current?.kill();
-
-      const tl = gsap.timeline({
-        defaults: { ease: "power3.inOut", force3D: true },
-        onComplete: () => {
-          sessionStorage.setItem("foto-skip-intro", "1");
-          router.push(`/fotografie/${targetSlug}`);
-        },
-      });
-      activeTimelineRef.current = tl;
-
-      // Cover shrink → posizione del peek cliccato
-      tl.to(
-        coverImgRef.current,
-        {
-          x: coverDx,
-          y: coverDy,
-          scale: coverScale,
-          duration: 0.85,
-        },
-        0
-      );
-      // Peek cliccato grow → centro (posizione della cover)
-      tl.to(
-        targetPeekRef.current,
-        {
-          x: peekDx,
-          y: peekDy,
-          scale: peekScale,
-          zIndex: 10,
-          duration: 0.85,
-        },
-        0
-      );
-      // Altro peek fade + subtle scale-down
-      if (otherPeekRef.current) {
-        tl.to(
-          otherPeekRef.current,
-          { opacity: 0, scale: 0.9, duration: 0.45, ease: "power2.in" },
-          0
-        );
-      }
-      // Rest (meta + grid + footer) fade + drift verticale sottile
-      if (restRef.current) {
-        tl.to(
-          restRef.current,
-          { opacity: 0, y: 20, duration: 0.5, ease: "power2.in" },
-          0
-        );
-      }
-    },
-    [router]
-  );
-
-  // NAV via swipe / wheel orizzontale / tastiera
-  useEffect(() => {
-    if (!trip || !prevTrip || !nextTrip) return;
-
-    const goPrev = () => {
-      if (lightboxIndex !== null) return;
-      navigateTo(prevTrip.slug, "prev");
-    };
-    const goNext = () => {
-      if (lightboxIndex !== null) return;
-      navigateTo(nextTrip.slug, "next");
-    };
-
-    // Solo touch swipe orizzontale (no wheel/mouse — evita trigger accidentale su scroll verticale)
-    const obs = Observer.create({
-      type: "touch",
-      target: window,
-      tolerance: 100,
-      onLeft: goNext,
-      onRight: goPrev,
-    });
-
-    const onKey = (e: KeyboardEvent) => {
-      if (lightboxIndex !== null) return;
-      if (e.key === "ArrowLeft") goPrev();
-      if (e.key === "ArrowRight") goNext();
-    };
-    window.addEventListener("keydown", onKey);
-
-    return () => {
-      obs.kill();
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [trip, prevTrip, nextTrip, navigateTo, lightboxIndex]);
-
-  if (!trip || !prevTrip || !nextTrip) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center px-6 text-center">
-        <div>
-          <div
-            className="text-white/50 text-xs uppercase tracking-[0.3em] mb-4"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            Viaggio non trovato
-          </div>
-          <Link
-            href="/fotografie"
-            className="text-white underline underline-offset-4 hover:text-white/70"
-            style={{ fontFamily: SERIF }}
-          >
-            ← Torna al portfolio
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const displayName = DISPLAY_NAME[slug] ?? trip.destination;
-  const cover = trip.coverSrc;
+  const displayedTrip = CHRONOLOGICAL[displayedIdx];
+  const displayedName =
+    DISPLAY_NAME[displayedTrip.slug] ?? displayedTrip.destination;
+  const gridPhotos = displayedTrip.photos
+    .filter((p) => p.srcThumb !== displayedTrip.coverSrc)
+    .slice(0, 40);
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
@@ -339,155 +312,116 @@ export default function TripPage() {
         </nav>
       </header>
 
-      <div ref={contentRef}>
-        {/* HERO — cover centrale + peek laterali */}
-        <section className="relative flex items-center justify-center pt-24 md:pt-28 pb-10 md:pb-14">
-          {/* Peek left = viaggio precedente */}
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[45%] md:-translate-x-[15%] w-[18vw] md:w-[14vw] max-w-[200px]">
-            <button
-              type="button"
-              onClick={() => navigateTo(prevTrip.slug, "prev")}
-              className="w-full flex flex-col items-center gap-2 md:gap-3 opacity-70 hover:opacity-100 transition-opacity group cursor-pointer"
+      {/* CAROUSEL COVER */}
+      <section
+        className="relative flex items-center justify-center overflow-hidden select-none"
+        style={{
+          height: "min(70vh, 720px)",
+          paddingTop: "6rem",
+          cursor: "grab",
+        }}
+      >
+        {CHRONOLOGICAL.map((t, i) => {
+          const dist = wrapDist(i - currentIdx);
+          const isPeek = Math.abs(dist) === 1;
+          return (
+            <div
+              key={t.slug}
+              ref={(el) => {
+                slideRefs.current[i] = el;
+              }}
+              onClick={() => goToSlot(i)}
+              className={`absolute w-[62vw] md:w-[28vw] max-w-[460px] aspect-[3/4] overflow-hidden shadow-2xl will-change-transform ${
+                dist === 0 ? "cursor-default" : "cursor-pointer"
+              } ${mounted ? "" : "invisible"}`}
+              style={{ transformOrigin: "center center" }}
+              aria-label={DISPLAY_NAME[t.slug] ?? t.destination}
             >
-              <div
-                ref={prevPeekImgRef}
-                className="w-full aspect-[3/4] overflow-hidden bg-neutral-900 will-change-transform"
-              >
-                <img
-                  src={cldResize(prevTrip.coverSrc, 500)}
-                  alt={DISPLAY_NAME[prevTrip.slug] ?? prevTrip.destination}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  draggable={false}
-                  loading="eager"
-                  decoding="async"
-                />
-              </div>
-              <div
-                className="hidden md:block text-white/60 text-[10px] uppercase tracking-[0.2em] text-center"
-                style={{ fontFamily: "var(--font-mono)" }}
-              >
-                ← {DISPLAY_NAME[prevTrip.slug] ?? prevTrip.destination}
-              </div>
-            </button>
-          </div>
+              <img
+                src={cldResize(t.coverSrc, isPeek ? 500 : 900)}
+                alt={DISPLAY_NAME[t.slug] ?? t.destination}
+                className="w-full h-full object-cover pointer-events-none"
+                draggable={false}
+                loading={Math.abs(wrapDist(i - initialIdx)) <= 2 ? "eager" : "lazy"}
+                decoding="async"
+              />
+            </div>
+          );
+        })}
+      </section>
 
-          {/* Cover */}
+      <div ref={restRef}>
+        {/* META */}
+        <section
+          className="text-center px-6 pt-6 md:pt-8 pb-10 md:pb-14 max-w-2xl mx-auto"
+          style={{ fontFamily: SERIF }}
+        >
           <div
-            ref={coverImgRef}
-            className="w-[62vw] md:w-[28vw] max-w-[460px] aspect-[3/4] overflow-hidden shadow-2xl will-change-transform"
+            className="text-white/50 text-[10px] md:text-xs tracking-[0.2em] mb-4"
+            style={{ fontFamily: "var(--font-mono)" }}
           >
-            <img
-              src={cover}
-              alt={displayName}
-              className="w-full h-full object-cover"
-              draggable={false}
-              loading="eager"
-              // @ts-expect-error fetchPriority is a valid HTML attribute
-              fetchpriority="high"
-            />
+            {displayedName} — {fmtMonth(displayedTrip.startDate)}
           </div>
+          <h1
+            className="text-white/85 text-sm md:text-base leading-relaxed max-w-xl mx-auto"
+            style={{ fontWeight: 300, letterSpacing: "0.01em" }}
+          >
+            {displayedTrip.excerpt}
+          </h1>
+        </section>
 
-          {/* Peek right = viaggio successivo */}
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[45%] md:translate-x-[15%] w-[18vw] md:w-[14vw] max-w-[200px]">
-            <button
-              type="button"
-              onClick={() => navigateTo(nextTrip.slug, "next")}
-              className="w-full flex flex-col items-center gap-2 md:gap-3 opacity-70 hover:opacity-100 transition-opacity group cursor-pointer"
-            >
-              <div
-                ref={nextPeekImgRef}
-                className="w-full aspect-[3/4] overflow-hidden bg-neutral-900 will-change-transform"
+        {/* GRIGLIA */}
+        <section className="px-3 md:px-4 pb-24">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 max-w-[1600px] mx-auto">
+            {gridPhotos.map((p, i) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setLightboxIndex(i)}
+                className="relative overflow-hidden bg-neutral-900 group cursor-zoom-in"
+                style={{
+                  aspectRatio:
+                    p.width && p.height
+                      ? `${p.width} / ${p.height}`
+                      : "3 / 4",
+                }}
               >
                 <img
-                  src={cldResize(nextTrip.coverSrc, 500)}
-                  alt={DISPLAY_NAME[nextTrip.slug] ?? nextTrip.destination}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  draggable={false}
-                  loading="eager"
+                  src={p.srcThumb}
+                  alt={p.alt}
+                  loading={i < 6 ? "eager" : "lazy"}
                   decoding="async"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                  draggable={false}
                 />
-              </div>
-              <div
-                className="hidden md:block text-white/60 text-[10px] uppercase tracking-[0.2em] text-center"
-                style={{ fontFamily: "var(--font-mono)" }}
-              >
-                {DISPLAY_NAME[nextTrip.slug] ?? nextTrip.destination} →
-              </div>
-            </button>
+              </button>
+            ))}
           </div>
         </section>
 
-        <div ref={restRef}>
-          {/* META */}
-          <section
-            className="text-center px-6 pb-10 md:pb-14 max-w-2xl mx-auto"
-            style={{ fontFamily: SERIF }}
-          >
-            <div
-              className="text-white/50 text-[10px] md:text-xs tracking-[0.2em] mb-4"
-              style={{ fontFamily: "var(--font-mono)" }}
+        {/* FOOTER */}
+        <footer
+          className="flex flex-col md:flex-row items-center md:items-end md:justify-between gap-2 md:gap-0 px-6 md:px-10 pb-4 md:pb-6 text-white/70 text-[10px] md:text-xs"
+          style={{ fontFamily: "var(--font-mono)" }}
+        >
+          <p className="tracking-[0.05em]">
+            © 2026 Luca Sammarco. Milano, Italia
+          </p>
+          <div className="flex gap-6">
+            <a
+              href="#privacy"
+              className="transition-opacity hover:opacity-80 tracking-[0.05em]"
             >
-              {displayName} — {fmtMonth(trip.startDate)}
-            </div>
-            <h1
-              className="text-white/85 text-sm md:text-base leading-relaxed max-w-xl mx-auto"
-              style={{ fontWeight: 300, letterSpacing: "0.01em" }}
+              Privacy Policy
+            </a>
+            <a
+              href="#cookie"
+              className="transition-opacity hover:opacity-80 tracking-[0.05em]"
             >
-              {trip.excerpt}
-            </h1>
-          </section>
-
-          {/* GRIGLIA */}
-          <section className="px-3 md:px-4 pb-24">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 max-w-[1600px] mx-auto">
-              {gridPhotos.map((p, i) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setLightboxIndex(i)}
-                  className="relative overflow-hidden bg-neutral-900 group cursor-zoom-in"
-                  style={{
-                    aspectRatio:
-                      p.width && p.height ? `${p.width} / ${p.height}` : "3 / 4",
-                  }}
-                >
-                  <img
-                    src={p.srcThumb}
-                    alt={p.alt}
-                    loading={i < 6 ? "eager" : "lazy"}
-                    decoding="async"
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-                    draggable={false}
-                  />
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* FOOTER */}
-          <footer
-            className="flex flex-col md:flex-row items-center md:items-end md:justify-between gap-2 md:gap-0 px-6 md:px-10 pb-4 md:pb-6 text-white/70 text-[10px] md:text-xs"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            <p className="tracking-[0.05em]">
-              © 2026 Luca Sammarco. Milano, Italia
-            </p>
-            <div className="flex gap-6">
-              <a
-                href="#privacy"
-                className="transition-opacity hover:opacity-80 tracking-[0.05em]"
-              >
-                Privacy Policy
-              </a>
-              <a
-                href="#cookie"
-                className="transition-opacity hover:opacity-80 tracking-[0.05em]"
-              >
-                Cookie Policy
-              </a>
-            </div>
-          </footer>
-        </div>
+              Cookie Policy
+            </a>
+          </div>
+        </footer>
       </div>
 
       {/* LIGHTBOX */}
@@ -516,11 +450,11 @@ function Lightbox({
 
   const prev = useCallback(
     () => setIndex((i) => (i - 1 + total) % total),
-    [total]
+    [total],
   );
   const next = useCallback(
     () => setIndex((i) => (i + 1) % total),
-    [total]
+    [total],
   );
 
   useEffect(() => {
