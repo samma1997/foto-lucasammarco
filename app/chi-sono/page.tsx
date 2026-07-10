@@ -216,18 +216,42 @@ export default function ChiSono() {
       // ---- scroll hint esce ----
       tl.to(hintRef.current, { autoAlpha: 0, duration: 5 }, 3);
 
-      // helper beat: in / out
-      const inY = reduce ? 0 : 40;
-      const outY = reduce ? 0 : -24;
+      // helper beat: in / out — entrata filmica (scale + blur drift)
+      const inY = reduce ? 0 : 46;
+      const outY = reduce ? 0 : -30;
+      const inScale = reduce ? 1 : 1.08;
       const beatIn = (el: HTMLElement, at: number) =>
         tl.fromTo(
           el,
-          { autoAlpha: 0, y: inY },
-          { autoAlpha: 1, y: 0, duration: 5, ease: "power3.out" },
+          {
+            autoAlpha: 0,
+            y: inY,
+            scale: inScale,
+            filter: reduce ? "blur(0px)" : "blur(9px)",
+          },
+          {
+            autoAlpha: 1,
+            y: 0,
+            scale: 1,
+            filter: "blur(0px)",
+            duration: 5.5,
+            ease: "power3.out",
+          },
           at
         );
       const beatOut = (el: HTMLElement, at: number) =>
-        tl.to(el, { autoAlpha: 0, y: outY, duration: 3, ease: "sine.in" }, at);
+        tl.to(
+          el,
+          {
+            autoAlpha: 0,
+            y: outY,
+            scale: reduce ? 1 : 1.04,
+            filter: reduce ? "blur(0px)" : "blur(6px)",
+            duration: 3,
+            ease: "sine.in",
+          },
+          at
+        );
 
       // BEAT 2 — headline (10 → 27)
       beatIn(beat2.current!, 10);
@@ -242,11 +266,16 @@ export default function ChiSono() {
       // BEAT 3 — metodo, blur-to-focus (30 → 47)
       tl.fromTo(
         beat3.current!,
-        { autoAlpha: 0, filter: reduce ? "blur(0px)" : "blur(12px)" },
+        {
+          autoAlpha: 0,
+          scale: inScale,
+          filter: reduce ? "blur(0px)" : "blur(14px)",
+        },
         {
           autoAlpha: 1,
+          scale: 1,
           filter: "blur(0px)",
-          duration: 5,
+          duration: 5.5,
           ease: "power2.out",
         },
         30
@@ -301,44 +330,46 @@ export default function ChiSono() {
           aria-label="Luca Sammarco fotografa in viaggio, in movimento"
         />
 
-        {/* vignette */}
+        {/* mood grade — approfondisce i neri, footage immersiva */}
+        <div
+          className="pointer-events-none absolute inset-0 z-10"
+          style={{ background: "rgba(0,0,0,0.30)" }}
+        />
+
+        {/* vignette avvolgente */}
         <div
           className="pointer-events-none absolute inset-0 z-10"
           style={{
             background:
-              "radial-gradient(ellipse 100% 82% at 50% 50%, transparent 50%, rgba(0,0,0,0.74) 100%)",
+              "radial-gradient(ellipse 92% 78% at 50% 46%, transparent 38%, rgba(0,0,0,0.86) 100%)",
           }}
         />
 
         {/* scrim top/bottom per leggibilità testi + HUD */}
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[38%]"
+          className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[42%]"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)",
+              "linear-gradient(to bottom, rgba(0,0,0,0.62), transparent)",
           }}
         />
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[42%]"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[46%]"
           style={{
             background:
-              "linear-gradient(to top, rgba(0,0,0,0.58), transparent)",
+              "linear-gradient(to top, rgba(0,0,0,0.68), transparent)",
           }}
         />
-
-        {/* letterbox 2.39:1 (solo desktop) */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 hidden md:block bg-black" style={{ height: "max(0px, calc((100vh - 100vw / 2.39) / 2))" }} />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 hidden md:block bg-black" style={{ height: "max(0px, calc((100vh - 100vw / 2.39) / 2))" }} />
 
         {/* ---------- TESTI ---------- */}
         {/* BEAT 2 — headline, terzo sinistro */}
         <div
           ref={beat2}
           style={{ textShadow: SHADOW }}
-          className="pointer-events-none absolute z-30 left-6 md:left-[7vw] top-1/2 -translate-y-1/2 max-w-[86vw] md:max-w-[42vw]"
+          className="pointer-events-none absolute z-30 left-6 md:left-[7vw] top-1/2 -translate-y-1/2"
         >
-          <p className={`${label} mb-4`}>Luca Sammarco — Fotografo</p>
-          <h1 className="font-medium leading-[0.98] tracking-[-0.01em] text-[15vw] md:text-[8vw]">
+          <p className={`${label} mb-5`}>Luca Sammarco — Fotografo</p>
+          <h1 className="font-medium leading-[0.92] tracking-[-0.015em] text-[13.5vw] md:text-[8vw]">
             <span className="block overflow-hidden">
               <span className="line block will-change-transform">Fotografia</span>
             </span>
@@ -355,7 +386,7 @@ export default function ChiSono() {
           className="pointer-events-none absolute z-30 left-6 md:left-[7vw] bottom-[16vh] md:bottom-[22vh] max-w-[86vw] md:max-w-[40vw]"
         >
           <p className={`${label} mb-4`}>Il metodo</p>
-          <p className="font-light leading-[1.15] tracking-[0.01em] text-[7vw] md:text-[3rem]">
+          <p className="font-light leading-[1.12] tracking-[0.01em] text-[7.5vw] md:text-[3.4rem]">
             Cammino, guardo,
             <br />e solo allora scatto.
           </p>
@@ -368,7 +399,7 @@ export default function ChiSono() {
           className="pointer-events-none absolute z-30 left-1/2 -translate-x-1/2 top-[16vh] md:top-[18vh] w-[90vw] md:w-auto text-center"
         >
           <p className={`${label} mb-4`}>Asia · 2024—2026</p>
-          <p className="font-light leading-[1.08] tracking-[0.01em] text-[8vw] md:text-[3.6vw]">
+          <p className="font-light leading-[1.04] tracking-[0.01em] text-[9vw] md:text-[4.4vw]">
             La luce naturale
             <br />detta ogni scatto.
           </p>
@@ -381,7 +412,7 @@ export default function ChiSono() {
           className="pointer-events-none absolute z-30 right-6 md:right-[7vw] bottom-[16vh] md:bottom-[24vh] max-w-[80vw] md:max-w-[32vw] text-right"
         >
           <p className={`${label} mb-4`}>[ l&apos;istante ]</p>
-          <p className="font-light leading-[1.12] tracking-[0.01em] text-[8vw] md:text-[3rem]">
+          <p className="font-light leading-[1.08] tracking-[0.01em] text-[8.5vw] md:text-[3.4rem]">
             Tutto scorre.
             <br />L&apos;immagine resta.
           </p>
