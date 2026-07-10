@@ -102,12 +102,28 @@ export default function TripPage() {
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const restRef = useRef<HTMLDivElement>(null);
   const isTransitioningRef = useRef(false);
+  const activeTimelineRef = useRef<gsap.core.Timeline | null>(null);
+  // Refs sync per leggere valori stabili dentro handlers (nessuna stale closure)
+  const currentIdxRef = useRef(initialIdx);
+  const isMobileRef = useRef(false);
+  const lightboxIndexRef = useRef<number | null>(null);
   const lenisRef = useRef<{
     raf: (t: number) => void;
     destroy: () => void;
     start: () => void;
     stop: () => void;
   } | null>(null);
+
+  // Sync ref con state
+  useEffect(() => {
+    currentIdxRef.current = currentIdx;
+  }, [currentIdx]);
+  useEffect(() => {
+    isMobileRef.current = isMobile;
+  }, [isMobile]);
+  useEffect(() => {
+    lightboxIndexRef.current = lightboxIndex;
+  }, [lightboxIndex]);
 
   // Mobile detection
   useEffect(() => {
@@ -117,101 +133,111 @@ export default function TripPage() {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Posiziona slot in base a currentIdx
-  const positionSlides = useCallback(
-    (animate: boolean) => {
-      slideRefs.current.forEach((el, i) => {
-        if (!el) return;
-        const dist = wrapDist(i - currentIdx);
-        const layout = slotLayout(dist, isMobile);
-        const target = {
+  // Layout istantaneo (mount + resize) — NON riparte su currentIdx change
+  useLayoutEffect(() => {
+    slideRefs.current.forEach((el, i) => {
+      if (!el) return;
+      const dist = wrapDist(i - currentIdxRef.current);
+      const layout = slotLayout(dist, isMobile);
+      gsap.set(el, {
+        x: `${layout.x}vw`,
+        scale: layout.scale,
+        opacity: layout.opacity,
+        zIndex: layout.zIndex,
+      });
+      el.style.pointerEvents = layout.pe;
+    });
+    setMounted(true);
+  }, [isMobile]);
+
+  // Cleanup timeline su unmount
+  useEffect(() => {
+    return () => {
+      activeTimelineRef.current?.kill();
+    };
+  }, []);
+
+  // Navigazione unificata → una sola timeline, un solo onComplete
+  const navigateStep = useCallback((direction: -1 | 1) => {
+    if (isTransitioningRef.current) return;
+    if (lightboxIndexRef.current !== null) return;
+    isTransitioningRef.current = true;
+
+    const oldIdx = currentIdxRef.current;
+    const newIdx = (oldIdx + direction + N) % N;
+    const mobile = isMobileRef.current;
+
+    activeTimelineRef.current?.kill();
+
+    const tl = gsap.timeline({
+      defaults: { ease: "power3.inOut", force3D: true, overwrite: "auto" },
+      onComplete: () => {
+        isTransitioningRef.current = false;
+        activeTimelineRef.current = null;
+      },
+    });
+    activeTimelineRef.current = tl;
+
+    // Anima ogni slot verso il nuovo layout
+    slideRefs.current.forEach((el, i) => {
+      if (!el) return;
+      const dist = wrapDist(i - newIdx);
+      const layout = slotLayout(dist, mobile);
+      tl.to(
+        el,
+        {
           x: `${layout.x}vw`,
           scale: layout.scale,
           opacity: layout.opacity,
           zIndex: layout.zIndex,
-        };
-        if (animate) {
-          gsap.to(el, {
-            ...target,
-            duration: 0.85,
-            ease: "power3.inOut",
-          });
-        } else {
-          gsap.set(el, target);
-        }
-        el.style.pointerEvents = layout.pe;
-      });
-    },
-    [currentIdx, isMobile],
-  );
-
-  // Initial set (no animate) + fade in su mount
-  useLayoutEffect(() => {
-    positionSlides(false);
-    setMounted(true);
-  }, [positionSlides]);
-
-  // Animate on currentIdx change + URL sync
-  useEffect(() => {
-    if (!mounted) return;
-    positionSlides(true);
-    const newSlug = CHRONOLOGICAL[currentIdx].slug;
-    window.history.replaceState(null, "", `/fotografie/${newSlug}`);
-  }, [currentIdx, mounted, positionSlides]);
-
-  // Sync displayedIdx dopo il fade-out di meta+grid
-  useEffect(() => {
-    if (currentIdx === displayedIdx) return;
-    isTransitioningRef.current = true;
-    const rest = restRef.current;
-    if (!rest) {
-      setDisplayedIdx(currentIdx);
-      isTransitioningRef.current = false;
-      return;
-    }
-    gsap.to(rest, {
-      opacity: 0,
-      y: 10,
-      duration: 0.28,
-      ease: "power2.in",
-      onComplete: () => {
-        setDisplayedIdx(currentIdx);
-        isTransitioningRef.current = false;
-      },
+          duration: 0.85,
+        },
+        0,
+      );
+      el.style.pointerEvents = layout.pe;
     });
-  }, [currentIdx, displayedIdx]);
 
-  // Fade rest back in quando displayedIdx cambia (nuovo contenuto)
-  useLayoutEffect(() => {
+    // Meta+grid: fade out → swap content → fade in (nella STESSA timeline)
     const rest = restRef.current;
-    if (!rest) return;
-    gsap.fromTo(
-      rest,
-      { opacity: 0, y: 10 },
-      { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
-    );
-  }, [displayedIdx]);
+    if (rest) {
+      tl.to(
+        rest,
+        { opacity: 0, y: 10, duration: 0.3, ease: "power2.in" },
+        0,
+      );
+      tl.call(() => setDisplayedIdx(newIdx), [], 0.32);
+      tl.fromTo(
+        rest,
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" },
+        0.34,
+      );
+    } else {
+      tl.call(() => setDisplayedIdx(newIdx), [], 0);
+    }
 
-  // Nav
-  const goPrev = useCallback(() => {
-    if (isTransitioningRef.current || lightboxIndex !== null) return;
-    setCurrentIdx((i) => (i - 1 + N) % N);
-  }, [lightboxIndex]);
+    // State + URL — non usati per animare, quindi ok se React re-render arriva più tardi
+    currentIdxRef.current = newIdx;
+    setCurrentIdx(newIdx);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(
+        null,
+        "",
+        `/fotografie/${CHRONOLOGICAL[newIdx].slug}`,
+      );
+    }
+  }, []);
 
-  const goNext = useCallback(() => {
-    if (isTransitioningRef.current || lightboxIndex !== null) return;
-    setCurrentIdx((i) => (i + 1) % N);
-  }, [lightboxIndex]);
+  const goPrev = useCallback(() => navigateStep(-1), [navigateStep]);
+  const goNext = useCallback(() => navigateStep(1), [navigateStep]);
 
   const goToSlot = useCallback(
     (targetIdx: number) => {
-      if (isTransitioningRef.current || lightboxIndex !== null) return;
-      const dist = wrapDist(targetIdx - currentIdx);
-      // solo slot ±1 sono cliccabili (per evitare salti grossi)
+      const dist = wrapDist(targetIdx - currentIdxRef.current);
       if (dist === 1) goNext();
       else if (dist === -1) goPrev();
     },
-    [currentIdx, goNext, goPrev, lightboxIndex],
+    [goNext, goPrev],
   );
 
   // Swipe/drag (touch+pointer) + tastiera
@@ -219,12 +245,12 @@ export default function TripPage() {
     const obs = Observer.create({
       type: "touch,pointer",
       target: window,
-      tolerance: 80,
+      tolerance: 100,
       onLeft: goNext,
       onRight: goPrev,
     });
     const onKey = (e: KeyboardEvent) => {
-      if (lightboxIndex !== null) return;
+      if (lightboxIndexRef.current !== null) return;
       if (e.key === "ArrowLeft") goPrev();
       if (e.key === "ArrowRight") goNext();
     };
@@ -233,7 +259,7 @@ export default function TripPage() {
       obs.kill();
       window.removeEventListener("keydown", onKey);
     };
-  }, [goPrev, goNext, lightboxIndex]);
+  }, [goPrev, goNext]);
 
   // Lenis smooth scroll
   useEffect(() => {
