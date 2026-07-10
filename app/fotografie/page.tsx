@@ -2,13 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
-import gsap from "gsap";
-import { Observer } from "gsap/Observer";
 import { trips } from "@/lib/destinations";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(Observer);
-}
 
 function cldResize(url: string, width: number): string {
   return url.replace(/w_\d+/, `w_${width}`);
@@ -137,81 +131,99 @@ function ContinentBlock({
   );
 }
 
-const NUM_COPIES = 2;
+const NUM_COPIES = 3;
 
 export default function FotografiePage() {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const repRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const copyRef = useRef<HTMLDivElement>(null);
+  const lenisRef = useRef<{
+    raf: (t: number) => void;
+    destroy: () => void;
+  } | null>(null);
 
+  // Loop infinito via native scroll + teleport pattern
   useLayoutEffect(() => {
-    const track = trackRef.current;
-    const rep = repRef.current;
-    if (!track || !rep) return;
+    const scroller = scrollerRef.current;
+    const content = contentRef.current;
+    const copy = copyRef.current;
+    if (!scroller || !content || !copy) return;
 
-    const prevHtmlOverflow = document.documentElement.style.overflow;
-    const prevBodyOverflow = document.body.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
-
-    let repHeight = rep.offsetHeight;
-    let scrollY = 0;
-    let currentY = 0;
+    let repH = copy.offsetHeight;
     let raf = 0;
-    let running = true;
 
     const measure = () => {
-      const h = rep.offsetHeight;
-      if (h > 0) repHeight = h;
+      const h = copy.offsetHeight;
+      if (h > 0) repH = h;
+      // Se lo scroll è ancora a 0 all'inizio, centra sul copy di mezzo
+      if (scroller.scrollTop < repH * 0.5) {
+        scroller.scrollTop = repH;
+      }
     };
-    measure();
 
     const ro = new ResizeObserver(() => measure());
-    ro.observe(rep);
+    ro.observe(copy);
+    // primo measure + posiziona al copy centrale
+    requestAnimationFrame(measure);
 
-    const observer = Observer.create({
-      target: window,
-      type: "wheel,touch",
-      wheelSpeed: 1,
-      preventDefault: true,
-      onChangeY: (self) => {
-        const evt = self.event as Event | undefined;
-        const isTouch = !!evt && evt.type.startsWith("touch");
-        // Su touch il segno di deltaY è opposto al wheel → invertiamo per uniformare
-        const delta = isTouch ? -self.deltaY : self.deltaY;
-        scrollY += delta * 1.5;
-      },
-    });
-
-    const wrap = (v: number) => {
-      if (repHeight <= 0) return 0;
-      const m = ((v % repHeight) + repHeight) % repHeight;
-      return m;
+    // Teleport quando ci avviciniamo ai bordi
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking || repH <= 0) return;
+      ticking = true;
+      raf = requestAnimationFrame(() => {
+        ticking = false;
+        const st = scroller.scrollTop;
+        if (st < repH * 0.5) {
+          scroller.scrollTop = st + repH;
+        } else if (st > repH * (NUM_COPIES - 0.5)) {
+          scroller.scrollTop = st - repH;
+        }
+      });
     };
-
-    // Smoothing FPS-independent → silky su qualunque refresh rate
-    let lastT = performance.now();
-    const tick = (now: number) => {
-      if (!running) return;
-      const dt = Math.min(now - lastT, 64); // clamp per gap tab switch
-      lastT = now;
-      if (repHeight > 0) {
-        // half-life ~120ms → damping smooth stile Lenis
-        const smoothing = 1 - Math.pow(0.001, dt / 120);
-        currentY += (scrollY - currentY) * smoothing;
-        const y = -wrap(currentY);
-        track.style.transform = `translate3d(0, ${y}px, 0)`;
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
+    scroller.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
-      running = false;
-      cancelAnimationFrame(raf);
-      observer.kill();
+      scroller.removeEventListener("scroll", onScroll);
       ro.disconnect();
-      document.documentElement.style.overflow = prevHtmlOverflow;
-      document.body.style.overflow = prevBodyOverflow;
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  // Lenis smooth scroll sul wrapper
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    const content = contentRef.current;
+    if (!scroller || !content) return;
+
+    let rafId = 0;
+    let cancelled = false;
+    (async () => {
+      const mod = await import("lenis");
+      if (cancelled) return;
+      const LenisCtor = mod.default;
+      const lenis = new LenisCtor({
+        wrapper: scroller,
+        content,
+        duration: 1.1,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        smoothWheel: true,
+        wheelMultiplier: 1,
+        touchMultiplier: 1.4,
+      }) as unknown as { raf: (t: number) => void; destroy: () => void };
+      lenisRef.current = lenis;
+      const raf = (time: number) => {
+        lenis.raf(time);
+        rafId = requestAnimationFrame(raf);
+      };
+      rafId = requestAnimationFrame(raf);
+    })();
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+      lenisRef.current?.destroy();
+      lenisRef.current = null;
     };
   }, []);
 
@@ -220,17 +232,40 @@ export default function FotografiePage() {
       className="fixed inset-0 bg-black text-white overflow-hidden"
       style={{ fontFamily: "var(--font-mono), ui-monospace, monospace" }}
     >
-      {/* HEADER — stile home (con fade nero sopra il loop) */}
-      <header className="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-6 md:px-10 pt-5 md:pt-6 pb-6 bg-gradient-to-b from-black via-black/90 to-transparent">
+      {/* SCROLLER NATIVO — feel silky su mobile via -webkit-overflow-scrolling */}
+      <div
+        ref={scrollerRef}
+        className="absolute inset-0 overflow-y-auto overflow-x-hidden overscroll-none"
+        style={{
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
+        <div ref={contentRef} className="pt-24 pb-16 px-6 md:px-10">
+          {Array.from({ length: NUM_COPIES }).map((_, r) => (
+            <div key={`rep-${r}`} ref={r === 0 ? copyRef : null}>
+              {CONTINENTS.map((g) => (
+                <ContinentBlock
+                  key={`${g.continent}-${r}`}
+                  group={g}
+                  copy={r}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* HEADER sopra scroller (gradiente nero) */}
+      <header className="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-6 md:px-10 pt-5 md:pt-6 pb-6 bg-gradient-to-b from-black via-black/90 to-transparent pointer-events-none">
         <Link
           href="/"
-          className="flex items-center text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none"
+          className="flex items-center text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none pointer-events-auto"
           style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}
         >
           Luca Sammarco
         </Link>
         <nav
-          className="flex flex-col items-end gap-1.5 text-white/80 text-xs md:text-sm"
+          className="flex flex-col items-end gap-1.5 text-white/80 text-xs md:text-sm pointer-events-auto"
           style={{ fontFamily: "var(--font-mono)" }}
         >
           <a
@@ -248,33 +283,25 @@ export default function FotografiePage() {
         </nav>
       </header>
 
-      {/* TRACK LOOP */}
-      <div
-        ref={trackRef}
-        className="absolute top-0 left-0 right-0 will-change-transform pt-20 px-6 md:px-10"
-      >
-        {Array.from({ length: NUM_COPIES }).map((_, r) => (
-          <div key={`rep-${r}`} ref={r === 0 ? repRef : null}>
-            {CONTINENTS.map((g) => (
-              <ContinentBlock key={`${g.continent}-${r}`} group={g} copy={r} />
-            ))}
-          </div>
-        ))}
-      </div>
-
-      {/* FOOTER — stile home (con fade nero sopra il loop) */}
+      {/* FOOTER sopra scroller */}
       <footer
-        className="absolute bottom-0 left-0 right-0 z-40 flex flex-col md:flex-row items-center md:items-end md:justify-between gap-2 md:gap-0 px-6 md:px-10 pt-8 pb-4 md:pb-6 text-white/70 text-[10px] md:text-xs bg-gradient-to-t from-black via-black/90 to-transparent"
+        className="absolute bottom-0 left-0 right-0 z-40 flex flex-col md:flex-row items-center md:items-end md:justify-between gap-2 md:gap-0 px-6 md:px-10 pt-8 pb-4 md:pb-6 text-white/70 text-[10px] md:text-xs bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none"
         style={{ fontFamily: "var(--font-mono)" }}
       >
-        <p className="tracking-[0.05em]">
+        <p className="tracking-[0.05em] pointer-events-auto">
           © 2026 Luca Sammarco. Milano, Italia
         </p>
-        <div className="flex gap-6">
-          <a href="#privacy" className="transition-opacity hover:opacity-80 tracking-[0.05em]">
+        <div className="flex gap-6 pointer-events-auto">
+          <a
+            href="#privacy"
+            className="transition-opacity hover:opacity-80 tracking-[0.05em]"
+          >
             Privacy Policy
           </a>
-          <a href="#cookie" className="transition-opacity hover:opacity-80 tracking-[0.05em]">
+          <a
+            href="#cookie"
+            className="transition-opacity hover:opacity-80 tracking-[0.05em]"
+          >
             Cookie Policy
           </a>
         </div>
