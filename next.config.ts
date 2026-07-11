@@ -13,6 +13,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // vecchi URL italiani → nuovi inglesi (non rompe link esistenti)
+  async redirects() {
+    return [
+      { source: "/fotografie", destination: "/photography", permanent: true },
+      { source: "/fotografie/:slug", destination: "/photography/:slug", permanent: true },
+      { source: "/chi-sono", destination: "/about", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

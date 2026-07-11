@@ -4,6 +4,8 @@
 // Replace src/srcThumb values with real CDN URLs when photos are ready.
 // -----------------------------------------------------------------------------
 
+import exifMap from "./photo-exif.json";
+
 export interface TripPhoto {
   id: string;
   src: string;       // full resolution placeholder: 1200x800
@@ -15,6 +17,7 @@ export interface TripPhoto {
   date: string;      // ISO date string, within the trip's date range
   width?: number;    // original photo width in pixels
   height?: number;   // original photo height in pixels
+  exif?: string;     // "26mm · f/1.5 · 1/2800s · ISO 50"
 }
 
 export interface Trip {
@@ -27,9 +30,24 @@ export interface Trip {
   coverSrc: string;
   excerpt: string;
   description: string;
+  camera?: string;
   photoCount: number;
   photos: TripPhoto[];
   tags: string[];
+  book?: TripBook;
+}
+
+export interface TripBook {
+  title: string;
+  year: string;
+  blurb: string[];
+  note: string;
+  tags: string[];
+  cover: string;
+  back: string;
+  spreads: string[];
+  requestUrl: string;
+  requestLabel: string;
 }
 
 // -----------------------------------------------------------------------------
@@ -5771,9 +5789,10 @@ export const trips: Trip[] = [
     endDate: "2025-06-09",
     coverSrc: "https://res.cloudinary.com/do9hrcwn1/image/upload/c_limit,f_auto,q_auto,w_1200/v1/sammapix/portfolio/japan/17-japanese-security-guard-arakawa-street-portrait-japan",
     excerpt:
-      "Street photography across Tokyo in May 2025: Senso-ji and Asakusa, Ueno, market lanes and the quiet rituals of daily life in Japan.",
+      "Japan opened the real doors to photography for me. For weeks I moved from place to place, and everything I looked at became an image — impossible landscapes, and people who carried a rare calm and a quiet respect. It is the trip where seeing finally became second nature.",
     description:
-      "Shot over a few days in Tokyo in May 2025, this collection wanders from the red lanterns and incense smoke of Senso-ji in Asakusa to the Great Buddha of Ueno, the Nakamise-dori market lanes and the small everyday moments in between. It is a portrait of Japan at street level, captured on a Sony A7C II.",
+      "Japan opened the real doors to photography for me. Over weeks of wandering from Tokyo outward, every scene seemed to ask to be photographed — impossible landscapes and people who carried a rare stillness and respect. Captured on an iPhone 13 Pro, it is the journey where looking became second nature.",
+    camera: "iPhone 13 Pro",
     photoCount: japanPhotos2025.length,
     photos: japanPhotos2025,
     tags: ["Japan", "Tokyo", "Asia", "Street", "Travel"],
@@ -5788,12 +5807,29 @@ export const trips: Trip[] = [
     endDate: "2026-06-24",
     coverSrc: "https://res.cloudinary.com/do9hrcwn1/image/upload/c_limit,f_auto,q_auto,w_1200/v1/sammapix/portfolio/bali-2026/12-bali-street-vendor-scooter-portrait-food-cart-indonesia",
     excerpt:
-      "A month and a half of street photography across Bali, from 13 May to 24 June 2026, the everyday rhythm of vendors, riders and golden hour corners far from the postcard.",
+      "A month and a half in Bali — and the first time I let the photograph move with me. From the back of a scooter the island opened up: in a few hours I crossed more places, faces and fleeting moments than I could have reached in a week on foot. Everything moved fast, so I learned to see fast — to catch the instant just before the road carried it away.",
     description:
-      "Shot over a month and a half in Bali, Indonesia, from 13 May to 24 June 2026, this collection trades temples and beaches for the living texture of the island: a shirtless builder grinning between bricks, a bakso cart rider waiting in the warm light, barbershops and noodle stalls and scooters threading the streets. It is a portrait of daily life, the people and small moments that make the island feel real, all captured on a Sony A7C II.",
+      "I spent a month and a half in Bali, and for the first time I let the photograph move with me — shot from the back of a scooter as the island rushed past. It was a revelation: in a handful of hours I saw more places, people and unrepeatable moments than I ever could on foot — a face in a doorway, a vendor in the golden light, a whole life glimpsed at speed. Nothing held still, and that became the point. This is Bali not as a postcard, but as it truly moves.",
+    camera: "Sony A7C II",
     photoCount: baliPhotos2026.length,
     photos: baliPhotos2026,
     tags: ["street", "portrait", "culture", "daily life", "golden hour", "Indonesia"],
+    book: {
+      title: "Bali",
+      year: "2026",
+      blurb: [
+        "My first photo book. A month and a half in Bali, from 13 May to 24 June 2026 — most of it shot in movement, from the back of a scooter threading through the streets.",
+        "Vendors, riders, warungs and golden-hour corners far from the postcard. Raw, hand-held, honest street photography. The trip where I started shooting for real.",
+      ],
+      note: "I'm not selling it for profit. You cover only printing and shipping — just message me and I'll send you a copy.",
+      tags: ["Street series", "Shot on Sony A7C II", "At printing cost"],
+      cover: "/book/bali-2026/cover.webp",
+      back: "/book/bali-2026/back.webp",
+      spreads: ["/book/bali-2026/spread-1.webp", "/book/bali-2026/spread-2.webp"],
+      requestUrl:
+        "https://wa.me/393880514174?text=Hi%20Luca%2C%20I'd%20like%20a%20copy%20of%20the%20Bali%202026%20photo%20book.",
+      requestLabel: "Request the book",
+    },
   },
   {
     slug: "sri-lanka",
@@ -5804,9 +5840,10 @@ export const trips: Trip[] = [
     endDate: "2025-03-25",
     coverSrc: "https://res.cloudinary.com/do9hrcwn1/image/upload/c_limit,f_auto,q_auto,w_1200/v1/sammapix/portfolio/sri-lanka/53-sri-lanka-train-journey-girl-window-portrait-red-blue",
     excerpt:
-      "A 16-day journey through ancient temples, lush highlands, and coastal towns.",
+      "Sri Lanka was my first real journey — and where it all began. I traveled with no plan, following instinct, and somewhere between the temples and the trains I fell for photography and for the road at the same time. These are the frames that lit the spark: the first time I understood that a picture could hold a place, and that this was how I wanted to see the world.",
     description:
-      "From the golden Buddhas of Colombo's Gangaramaya Temple to the misty tea plantations of the hill country, Sri Lanka is a photographer's paradise. This collection captures the sacred, the wild, and the everyday — all through the lens of a first visit.",
+      "Sri Lanka was my first real journey, and the place where my love for photography and travel began. From the golden Buddhas of Colombo to the misty highlands and the coastal trains, I traveled with no plan, following instinct. Shot entirely on an iPhone 13 Pro, these are the images that started everything.",
+    camera: "iPhone 13 Pro",
     photoCount: sriLankaPhotos.length,
     photos: sriLankaPhotos,
     tags: ["temples", "wildlife", "culture", "landscape", "street"],
@@ -5820,9 +5857,10 @@ export const trips: Trip[] = [
     endDate: "2025-04-04",
     coverSrc: "https://res.cloudinary.com/do9hrcwn1/image/upload/c_limit,f_auto,q_auto,w_1200/v1/sammapix/portfolio/bali/02-balinese-man-udeng-sarong-coastal-rock-bali-indonesia",
     excerpt:
-      "Six days across Bali — the sea temple of Tanah Lot, the royal water gardens of Mengwi, the monkey forest of Ubud, and the clifftops of Uluwatu.",
+      "My first trip alone — just a few days in Bali, tracing the island's most famous corners. I was still learning to look, still finding my eye, but something had already taken hold: the quiet thrill of landing somewhere new with only a camera to make sense of it all.",
     description:
-      "From the moss-covered guardians of Pura Taman Ayun in Mengwi to the cheeky macaques of the Ubud Monkey Forest, the monumental Garuda Wisnu Kencana, and the turquoise cliffs of Uluwatu, this collection follows the spiritual and wild coastline of Bali, Indonesia — shot over three days in late March and early April 2025.",
+      "My first solo trip: a few days in Bali, exploring the island's best-known places — Tanah Lot, the water gardens of Mengwi, the Ubud monkey forest and the cliffs of Uluwatu. I was still finding my eye, learning to see, camera in hand. Shot on an iPhone 13 Pro in early 2025.",
+    camera: "iPhone 13 Pro",
     photoCount: baliPhotos.length,
     photos: baliPhotos,
     tags: ["temples", "beaches", "wildlife", "culture", "landscape", "portrait"],
@@ -5836,9 +5874,10 @@ export const trips: Trip[] = [
     endDate: "2025-05-09",
     coverSrc: "https://res.cloudinary.com/do9hrcwn1/image/upload/c_limit,f_auto,q_auto,w_1200/v1/sammapix/portfolio/thailand/67-kayan-long-neck-woman-portrait-chiang-rai-thailand",
     excerpt:
-      "A month across Thailand, from the temples of Bangkok to the hill tribes of Chiang Rai and the islands of the Andaman coast.",
+      "Thailand is still one of the most beautiful journeys of my life. Nearly a month and a half of extraordinary places and unexpected people — I saw so much, met so many, that it stopped feeling like travel and started feeling like living. Every single day, another world.",
     description:
-      "From the golden Marble Temple and the Grand Palace of Bangkok to the dragon tower of Wat Samphran, the mountain shrine of Doi Suthep, the surreal White Temple of Chiang Rai and the Kayan long neck village, then south to the limestone islands of Krabi and the beaches of Phuket. Shot on location across April and May 2025, ordered exactly as the journey unfolded.",
+      "Thailand remains one of the most beautiful trips I have ever taken — nearly a month and a half from the temples of Bangkok to the hill tribes of Chiang Rai and the islands of the Andaman coast. I saw so much and met so many people that it stopped feeling like travel and started feeling like living. Shot on an iPhone 13 Pro across April and May 2025.",
+    camera: "iPhone 13 Pro",
     photoCount: thailandPhotos.length,
     photos: thailandPhotos,
     tags: ["temples", "culture", "portrait", "islands", "landscape", "street"],
@@ -5852,14 +5891,22 @@ export const trips: Trip[] = [
     endDate: "2025-05-21",
     coverSrc: "https://res.cloudinary.com/do9hrcwn1/image/upload/c_limit,f_auto,q_auto,w_1200/v1/sammapix/portfolio/china/12-longgang-china-hanfu-woman-traditional-garden-umbrella",
     excerpt:
-      "A week in Shenzhen, from neon night markets to surreal bookstores, giant sculptures and quiet canal-side moments.",
+      "A few days in Shenzhen — a more futuristic China. Beyond the neon and the technology I went looking for the real neighborhoods, the ordinary corners where everyday life still breathes. A short, curious glimpse behind the spectacle.",
     description:
-      "Shenzhen is China at full speed: electric night streets in Longgang, the spiral bookstore of Bao'an, the monumental sculptures of Nanshan, and a quiet woman in traditional Hanfu under a parasol by the water. Shot on location in May 2025, ordered as the days unfolded.",
+      "A few days in Shenzhen, the most futuristic face of China. Beyond the technology and the electric night streets of Longgang, I went searching for the real quarters — the ordinary places where daily life still breathes. Shot on an iPhone 13 Pro in May 2025.",
+    camera: "iPhone 13 Pro",
     photoCount: chinaPhotos.length,
     photos: chinaPhotos,
     tags: ["street", "culture", "architecture", "night", "portrait"],
   },
 ];
+
+// Merge EXIF (focale · apertura · tempo · ISO) su ogni foto, per id
+{
+  const exif = exifMap as Record<string, string>;
+  for (const t of trips)
+    for (const p of t.photos) if (exif[p.id]) p.exif = exif[p.id];
+}
 
 // -----------------------------------------------------------------------------
 // Helpers

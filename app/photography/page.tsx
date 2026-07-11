@@ -12,8 +12,8 @@ const DISPLAY_NAME: Record<string, string> = {
   "sri-lanka": "Sri Lanka",
   bali: "Bali",
   thailand: "Thailand",
-  shenzhen: "Cina",
-  "japan-2025": "Giappone",
+  shenzhen: "China",
+  "japan-2025": "Japan",
   "bali-2026": "Bali",
 };
 
@@ -84,7 +84,7 @@ function ContinentBlock({
         {group.trips.map((t, i) => (
           <Link
             key={`${t.slug}-${copy}-${i}`}
-            href={`/fotografie/${t.slug}`}
+            href={`/photography/${t.slug}`}
             className="group relative aspect-[4/5] overflow-hidden bg-neutral-900 block"
           >
             <img
@@ -121,7 +121,7 @@ function ContinentBlock({
                 className="mt-3 text-white/70 text-xs"
                 style={{ fontFamily: "var(--font-mono)", fontWeight: 300 }}
               >
-                {t.photoCount} foto
+                {t.photoCount} photos
               </div>
             </div>
           </Link>
@@ -233,16 +233,16 @@ export default function FotografiePage() {
           style={{ fontFamily: "var(--font-mono)" }}
         >
           <a
-            href="/chi-sono"
+            href="/about"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
-            Chi sono
+            About
           </a>
           <a
-            href="/fotografie"
+            href="/photography"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
-            Fotografie
+            Photography
           </a>
         </nav>
       </header>
@@ -253,17 +253,17 @@ export default function FotografiePage() {
         style={{ fontFamily: "var(--font-mono)" }}
       >
         <p className="tracking-[0.05em] pointer-events-auto">
-          © 2026 Luca Sammarco. Milano, Italia
+          © 2026 Luca Sammarco. Milan, Italy
         </p>
         <div className="flex gap-6 pointer-events-auto">
           <a
-            href="#privacy"
+            href="https://lucasammarco.com/privacy" target="_blank" rel="noopener noreferrer"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
             Privacy Policy
           </a>
           <a
-            href="#cookie"
+            href="https://lucasammarco.com/privacy#cookie" target="_blank" rel="noopener noreferrer"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
             Cookie Policy

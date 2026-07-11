@@ -465,7 +465,7 @@ export default function ChiSono() {
           ref={canvasRef}
           className="absolute inset-0 h-full w-full"
           role="img"
-          aria-label="Luca Sammarco fotografa in viaggio, in movimento"
+          aria-label="Luca Sammarco photographing while traveling, in motion"
         />
 
         {/* cornice nera sfumata attorno al video (stile CapCut) — su mobile
@@ -516,20 +516,20 @@ export default function ChiSono() {
           style={{ textShadow: SHADOW }}
           className="pointer-events-none absolute z-30 left-6 md:left-[7vw] right-6 top-1/2 -translate-y-1/2"
         >
-          <p className={`${label} mb-4`}>Luca Sammarco — Fotografo</p>
+          <p className={`${label} mb-4`}>Luca Sammarco — Developer &amp; photographer</p>
           <h1
             className="font-medium leading-[1.02] tracking-[-0.01em]"
             style={{ fontSize: "clamp(1.4rem, 7vw, 4rem)" }}
           >
             <span className="block">
-              <span className="line block will-change-transform">Fotografia</span>
+              <span className="line block will-change-transform">Photography</span>
             </span>
             <span className="block">
-              <span className="line block will-change-transform">in movimento</span>
+              <span className="line block will-change-transform">in motion</span>
             </span>
           </h1>
           <p className="mt-5 md:mt-6 max-w-[78vw] md:max-w-[26vw] font-light leading-[1.4] text-white/75 text-[3.6vw] md:text-[1rem]">
-            Immagini nate camminando. L&apos;istante colto mentre tutto scorre.
+            A developer with a love for travel and photography. I shoot everyday life — and this is only the beginning.
           </p>
         </div>
 
@@ -539,10 +539,10 @@ export default function ChiSono() {
           style={{ textShadow: SHADOW }}
           className="pointer-events-none absolute z-30 right-6 md:right-[7vw] bottom-[24vh] md:bottom-[18vh] max-w-[80vw] md:max-w-[34vw] text-right"
         >
-          <p className={`${label} mb-3`}>Il metodo</p>
+          <p className={`${label} mb-3`}>What it means to me</p>
           <p className="font-light leading-[1.22] tracking-[0.01em] text-[4.5vw] md:text-[1.7rem]">
-            Cammino, guardo,
-            <br />e solo allora scatto.
+            Looking for the shot
+            <br />makes you truly look.
           </p>
         </div>
 
@@ -553,13 +553,13 @@ export default function ChiSono() {
         >
           <div className="absolute left-6 md:left-[7vw] bottom-[22vh] md:bottom-[9vh] max-w-[74vw] md:max-w-[30vw]">
             <div className="ptitle" style={{ textShadow: SHADOW }}>
-              <p className={`${label} mb-3`}>Il lavoro · Asia</p>
+              <p className={`${label} mb-3`}>The work</p>
               <p
                 className="font-light leading-[1.05] tracking-[-0.005em]"
                 style={{ fontSize: "clamp(1.6rem, 5.5vw, 3rem)" }}
               >
-                Un fotogramma
-                <br />alla volta.
+                Everyday life,
+                <br />one frame at a time.
               </p>
             </div>
           </div>
@@ -571,10 +571,10 @@ export default function ChiSono() {
           style={{ textShadow: SHADOW }}
           className="pointer-events-none absolute z-30 left-1/2 -translate-x-1/2 bottom-[22vh] md:bottom-[14vh] w-[90vw] md:w-auto text-center"
         >
-          <p className={`${label} mb-4`}>Asia · 2024—2026</p>
+          <p className={`${label} mb-4`}>Why I do it</p>
           <p className="font-light leading-[1.12] tracking-[0.01em] text-[6vw] md:text-[2.8vw]">
-            La luce naturale
-            <br />detta ogni scatto.
+            The world,
+            <br />seen with different eyes.
           </p>
         </div>
 
@@ -584,10 +584,10 @@ export default function ChiSono() {
           style={{ textShadow: SHADOW }}
           className="pointer-events-none absolute z-30 right-6 md:right-[7vw] bottom-[16vh] md:bottom-[24vh] max-w-[80vw] md:max-w-[32vw] text-right"
         >
-          <p className={`${label} mb-4`}>[ l&apos;istante ]</p>
+          <p className={`${label} mb-4`}>[ the instant ]</p>
           <p className="font-light leading-[1.18] tracking-[0.01em] text-[5.5vw] md:text-[2.2rem]">
-            Tutto scorre.
-            <br />L&apos;immagine resta.
+            Everything moves on.
+            <br />The image stays.
           </p>
         </div>
 
@@ -597,12 +597,12 @@ export default function ChiSono() {
           style={{ textShadow: SHADOW }}
           className="absolute z-30 left-1/2 -translate-x-1/2 bottom-[14vh] md:bottom-[16vh] flex flex-col items-center gap-5 text-center"
         >
-          <p className={label}>Esplora il lavoro</p>
+          <p className={label}>Explore the work</p>
           <Link
-            href="/fotografie"
+            href="/photography"
             className="pointer-events-auto text-white/80 hover:text-white transition-colors text-[0.85rem] md:text-base tracking-[0.35em] uppercase focus-visible:outline focus-visible:outline-1 focus-visible:outline-white focus-visible:outline-offset-4"
           >
-            [ fotografie ]
+            [ photography ]
           </Link>
         </div>
 
@@ -684,12 +684,12 @@ export default function ChiSono() {
 
           {/* CTA */}
           <div className="absolute inset-x-0 bottom-[18vh] md:bottom-[12vh] flex flex-col items-center gap-5 text-center">
-            <p className={label}>Esplora il mio lavoro</p>
+            <p className={label}>Explore my work</p>
             <Link
-              href="/fotografie"
+              href="/photography"
               className="pointer-events-auto text-white/85 hover:text-white transition-colors text-[0.9rem] md:text-base tracking-[0.35em] uppercase focus-visible:outline focus-visible:outline-1 focus-visible:outline-white focus-visible:outline-offset-4"
             >
-              [ fotografie ]
+              [ photography ]
             </Link>
           </div>
         </div>
@@ -715,16 +715,16 @@ export default function ChiSono() {
           style={{ fontFamily: "var(--font-mono)" }}
         >
           <Link
-            href="/chi-sono"
+            href="/about"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
-            Chi sono
+            About
           </Link>
           <Link
-            href="/fotografie"
+            href="/photography"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
-            Fotografie
+            Photography
           </Link>
         </nav>
       </header>

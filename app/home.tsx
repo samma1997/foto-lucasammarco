@@ -128,16 +128,16 @@ export default function Home() {
           style={{ fontFamily: "var(--font-mono)" }}
         >
           <a
-            href="/chi-sono"
+            href="/about"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
-            Chi sono
+            About
           </a>
           <a
-            href="/fotografie"
+            href="/photography"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
-            Fotografie
+            Photography
           </a>
         </nav>
       </header>
@@ -148,13 +148,13 @@ export default function Home() {
         style={{ fontFamily: "var(--font-mono)" }}
       >
         <p className="tracking-[0.05em]">
-          © 2026 Luca Sammarco. Milano, Italia
+          © 2026 Luca Sammarco. Milan, Italy
         </p>
         <div className="flex gap-6">
-          <a href="#privacy" className="transition-opacity hover:opacity-80 tracking-[0.05em]">
+          <a href="https://lucasammarco.com/privacy" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-80 tracking-[0.05em]">
             Privacy Policy
           </a>
-          <a href="#cookie" className="transition-opacity hover:opacity-80 tracking-[0.05em]">
+          <a href="https://lucasammarco.com/privacy#cookie" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-80 tracking-[0.05em]">
             Cookie Policy
           </a>
         </div>

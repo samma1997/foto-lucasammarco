@@ -225,13 +225,13 @@ export default function Intro() {
           className="text-white/85 text-xs md:text-sm tracking-[0.12em] whitespace-nowrap"
           style={{ fontFamily: "var(--font-mono)", fontWeight: 400 }}
         >
-          Fotografia in movimento
+          Photography in motion
         </p>
         <button
           onClick={() => setEntered(true)}
-          className="pointer-events-auto text-white/70 text-[10px] md:text-xs tracking-[0.35em] hover:text-white transition-colors cursor-pointer whitespace-nowrap uppercase"
+          className="pointer-events-auto text-white/70 text-[10px] md:text-xs tracking-[0.35em] hover:text-white transition-colors cursor-pointer whitespace-nowrap"
           style={{ fontFamily: "var(--font-mono)" }}
-          aria-label="Entra nel sito"
+          aria-label="Enter the site"
         >
           [ enter ]
         </button>

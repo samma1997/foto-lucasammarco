@@ -11,7 +11,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import gsap from "gsap";
 import { Observer } from "gsap/Observer";
-import { trips, type TripPhoto } from "@/lib/destinations";
+import { trips, type TripPhoto, type TripBook } from "@/lib/destinations";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(Observer);
@@ -25,19 +25,19 @@ const DISPLAY_NAME: Record<string, string> = {
   "sri-lanka": "Sri Lanka",
   bali: "Bali",
   thailand: "Thailand",
-  shenzhen: "Cina",
-  "japan-2025": "Giappone",
+  shenzhen: "China",
+  "japan-2025": "Japan",
   "bali-2026": "Bali",
 };
 
-const MONTHS_IT = [
-  "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
-  "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
+const MONTHS_EN = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 function fmtMonth(d: string) {
   const dt = new Date(d);
-  return `${MONTHS_IT[dt.getMonth()]} ${dt.getFullYear()}`;
+  return `${MONTHS_EN[dt.getMonth()]} ${dt.getFullYear()}`;
 }
 
 const SERIF = "var(--font-mono), ui-monospace, monospace";
@@ -224,7 +224,7 @@ export default function TripPage() {
       window.history.replaceState(
         null,
         "",
-        `/fotografie/${CHRONOLOGICAL[newIdx].slug}`,
+        `/photography/${CHRONOLOGICAL[newIdx].slug}`,
       );
     }
   }, []);
@@ -318,6 +318,7 @@ export default function TripPage() {
   const gridPhotos = displayedTrip.photos
     .filter((p) => p.srcThumb !== displayedTrip.coverSrc)
     .sort((a, b) => a.date.localeCompare(b.date));
+  const book = displayedTrip.book;
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
@@ -335,16 +336,16 @@ export default function TripPage() {
           style={{ fontFamily: "var(--font-mono)" }}
         >
           <a
-            href="/chi-sono"
+            href="/about"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
-            Chi sono
+            About
           </a>
           <a
-            href="/fotografie"
+            href="/photography"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
-            Fotografie
+            Photography
           </a>
         </nav>
       </header>
@@ -405,6 +406,14 @@ export default function TripPage() {
           >
             {displayedTrip.excerpt}
           </h1>
+          {displayedTrip.camera && (
+            <div
+              className="mt-6 text-white/40 text-[10px] md:text-xs tracking-[0.25em] uppercase"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              Shot on {displayedTrip.camera}
+            </div>
+          )}
         </section>
 
         {/* GRIGLIA */}
@@ -436,23 +445,83 @@ export default function TripPage() {
           </div>
         </section>
 
+        {/* THE BOOK — solo per i viaggi con un libro */}
+        {book && (
+          <section
+            id="the-book"
+            className="scroll-mt-24 border-t border-white/10 px-6 md:px-10 py-20 md:py-28"
+          >
+            <div className="mx-auto grid max-w-5xl grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-16">
+              {/* galleria libro animata */}
+              <BookShowcase book={book} />
+
+              {/* testo */}
+              <div style={{ fontFamily: SERIF }}>
+                <p
+                  className="mb-4 text-white/40 text-[10px] md:text-xs uppercase tracking-[0.35em]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  The Book
+                </p>
+                <h2
+                  className="text-4xl md:text-6xl"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 700,
+                    letterSpacing: "-0.03em",
+                  }}
+                >
+                  {book.title}{" "}
+                  <span className="text-white/40">{book.year}</span>
+                </h2>
+                <div className="mt-6 max-w-md space-y-4 text-white/70 text-sm md:text-base leading-relaxed" style={{ fontWeight: 300 }}>
+                  {book.blurb.map((p, i) => (
+                    <p key={i}>{p}</p>
+                  ))}
+                  <p className="text-white/90">{book.note}</p>
+                </div>
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {book.tags.map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-full border border-white/15 px-3 py-1 text-white/50 text-[10px] md:text-xs uppercase tracking-[0.15em]"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                <a
+                  href={book.requestUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-8 inline-flex items-center gap-2 border border-white/80 px-6 py-3 text-white text-xs md:text-sm uppercase tracking-[0.25em] transition-colors hover:bg-white hover:text-black"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  {book.requestLabel} →
+                </a>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* FOOTER */}
         <footer
           className="flex flex-col md:flex-row items-center md:items-end md:justify-between gap-2 md:gap-0 px-6 md:px-10 pb-4 md:pb-6 text-white/70 text-[10px] md:text-xs"
           style={{ fontFamily: "var(--font-mono)" }}
         >
           <p className="tracking-[0.05em]">
-            © 2026 Luca Sammarco. Milano, Italia
+            © 2026 Luca Sammarco. Milan, Italy
           </p>
           <div className="flex gap-6">
             <a
-              href="#privacy"
+              href="https://lucasammarco.com/privacy" target="_blank" rel="noopener noreferrer"
               className="transition-opacity hover:opacity-80 tracking-[0.05em]"
             >
               Privacy Policy
             </a>
             <a
-              href="#cookie"
+              href="https://lucasammarco.com/privacy#cookie" target="_blank" rel="noopener noreferrer"
               className="transition-opacity hover:opacity-80 tracking-[0.05em]"
             >
               Cookie Policy
@@ -461,6 +530,17 @@ export default function TripPage() {
         </footer>
       </div>
 
+      {/* richiamino laterale al libro */}
+      {book && lightboxIndex === null && (
+        <a
+          href="#the-book"
+          className="fixed right-0 top-1/2 z-40 -translate-y-1/2 border border-r-0 border-white/20 bg-black/70 px-2 py-4 text-white/70 text-[10px] uppercase tracking-[0.3em] backdrop-blur transition-colors hover:text-white"
+          style={{ writingMode: "vertical-rl", fontFamily: "var(--font-mono)" }}
+        >
+          The Book
+        </a>
+      )}
+
       {/* LIGHTBOX */}
       {lightboxIndex !== null && (
         <Lightbox
@@ -468,6 +548,130 @@ export default function TripPage() {
           startIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
         />
+      )}
+    </div>
+  );
+}
+
+/* Galleria libro — crossfade automatico stile Apple + click per ingrandire */
+function BookShowcase({ book }: { book: TripBook }) {
+  const images = [book.cover, book.back, ...book.spreads];
+  const [active, setActive] = useState(0);
+  const [zoom, setZoom] = useState(false);
+
+  const go = useCallback(
+    (i: number) => setActive((i + images.length) % images.length),
+    [images.length],
+  );
+
+  // auto-cycle (si ferma quando è aperto lo zoom); riparte a ogni cambio
+  useEffect(() => {
+    if (zoom) return;
+    const id = window.setInterval(
+      () => setActive((a) => (a + 1) % images.length),
+      3600,
+    );
+    return () => window.clearInterval(id);
+  }, [zoom, active, images.length]);
+
+  // frecce da tastiera nello zoom
+  useEffect(() => {
+    if (!zoom) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setZoom(false);
+      if (e.key === "ArrowLeft") go(active - 1);
+      if (e.key === "ArrowRight") go(active + 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoom, active, go]);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setZoom(true)}
+        aria-label="Enlarge book"
+        className="relative block aspect-[4/5] w-full cursor-zoom-in overflow-hidden rounded-md bg-neutral-950"
+      >
+        {images.map((src, i) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={i}
+            src={src}
+            alt=""
+            draggable={false}
+            className="absolute inset-0 h-full w-full object-contain transition-all duration-[900ms] ease-out"
+            style={{
+              opacity: i === active ? 1 : 0,
+              transform: i === active ? "scale(1)" : "scale(1.05)",
+            }}
+          />
+        ))}
+      </button>
+
+      <div className="mt-4 grid grid-cols-4 gap-3">
+        {images.map((src, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => go(i)}
+            aria-label={`View ${i + 1}`}
+            className={`aspect-square overflow-hidden rounded transition-opacity ${
+              i === active
+                ? "opacity-100 ring-1 ring-white/70"
+                : "opacity-45 hover:opacity-80"
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt=""
+              draggable={false}
+              className="h-full w-full object-cover"
+            />
+          </button>
+        ))}
+      </div>
+
+      {zoom && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95"
+          onClick={() => setZoom(false)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={images[active]}
+            alt=""
+            className="max-h-[88vh] max-w-[92vw] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            className="absolute right-5 top-5 text-white/70 text-xs uppercase tracking-[0.2em] hover:text-white"
+            style={{ fontFamily: "var(--font-mono)" }}
+            onClick={() => setZoom(false)}
+          >
+            ✕ close
+          </button>
+          <button
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-3xl text-white/60 hover:text-white"
+            onClick={(e) => {
+              e.stopPropagation();
+              go(active - 1);
+            }}
+          >
+            ‹
+          </button>
+          <button
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-3xl text-white/60 hover:text-white"
+            onClick={(e) => {
+              e.stopPropagation();
+              go(active + 1);
+            }}
+          >
+            ›
+          </button>
+        </div>
       )}
     </div>
   );
@@ -571,9 +775,21 @@ function Lightbox({
         />
       </div>
 
-      {photo.caption && (
-        <div className="absolute bottom-4 md:bottom-6 left-0 right-0 text-center px-6 text-white/60 text-[10px] md:text-xs tracking-[0.15em] pointer-events-none">
-          {photo.caption}
+      {(photo.caption || photo.exif) && (
+        <div className="absolute bottom-4 md:bottom-6 left-0 right-0 px-6 text-center pointer-events-none">
+          {photo.caption && (
+            <div className="text-white/60 text-[10px] md:text-xs tracking-[0.15em]">
+              {photo.caption}
+            </div>
+          )}
+          {photo.exif && (
+            <div
+              className="mt-1.5 text-white/35 text-[9px] md:text-[10px] tracking-[0.18em] tabular-nums"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              {photo.exif}
+            </div>
+          )}
         </div>
       )}
     </div>

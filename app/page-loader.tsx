@@ -4,16 +4,18 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
 
-// Frasi di caricamento — ne parte una a caso ogni volta
+// Loading phrases — a random one each time (short, poetic, reflective)
 const PHRASES = [
-  "Rilassati e respira",
-  "Guarda lentamente",
-  "Un passo alla volta",
-  "Lascia scorrere",
-  "Respira il momento",
-  "Rallenta",
-  "Prenditi il tuo tempo",
-  "Osserva ciò che passa",
+  "The light won't wait",
+  "Nothing holds still",
+  "Beauty rarely poses",
+  "The best light is leaving",
+  "Stillness is a kind of speed",
+  "What passes, stays",
+  "The moment outruns the eye",
+  "Wander, then look",
+  "Every road remembers",
+  "Look before it's gone",
 ];
 
 export default function PageLoader() {
@@ -62,9 +64,9 @@ export default function PageLoader() {
     };
   }, [pathname]);
 
-  // niente loader su: home (c'è l'intro) e dettaglio viaggio /fotografie/<slug>
+  // niente loader su: home (c'è l'intro) e dettaglio viaggio /photography/<slug>
   // (lì c'è già l'animazione della carrellata → eviteremmo doppia animazione)
-  if (pathname === "/" || /^\/fotografie\/[^/]+$/.test(pathname)) return null;
+  if (pathname === "/" || /^\/photography\/[^/]+$/.test(pathname)) return null;
 
   return (
     <div
