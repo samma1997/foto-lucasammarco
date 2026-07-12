@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import Image from "next/image";
 import gsap from "gsap";
 import { trips } from "@/lib/destinations";
 import Home from "./home";
@@ -199,15 +198,20 @@ export default function Intro() {
                 className="relative overflow-hidden bg-neutral-900 will-change-transform shadow-[0_18px_44px_-14px_rgba(0,0,0,0.75)]"
                 style={{ zIndex: i + 1 }}
               >
-                <Image
+                {/* img diretta da Cloudinary (già ottimizzata f_auto,q_auto):
+                    affidabile, niente collo di bottiglia dell'optimizer Next.
+                    alt="" perché decorative → mai testo visibile in caso di errore. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={p.src}
-                  alt={p.alt}
-                  fill
-                  className="object-cover"
-                  priority
+                  alt=""
                   loading="eager"
-                  sizes="(max-width: 768px) 50vw, 21vw"
+                  decoding="async"
                   draggable={false}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.visibility = "hidden";
+                  }}
                 />
               </div>
             ))}
