@@ -13,3 +13,14 @@ body {
   color: #ffffff;
   font-family: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
+
+/* barrette equalizzatore audio */
+@keyframes soundbar {
+  0%,
+  100% {
+    transform: scaleY(0.28);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}

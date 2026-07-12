@@ -5,6 +5,7 @@ import Image from "next/image";
 import gsap from "gsap";
 import { trips } from "@/lib/destinations";
 import Home from "./home";
+import { startAmbient } from "./ambient";
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -228,7 +229,10 @@ export default function Intro() {
           Photography in motion
         </p>
         <button
-          onClick={() => setEntered(true)}
+          onClick={() => {
+            startAmbient(); // il click sblocca l'audio → autoplay tappeto sonoro
+            setEntered(true);
+          }}
           className="pointer-events-auto text-white/70 text-[10px] md:text-xs tracking-[0.35em] hover:text-white transition-colors cursor-pointer whitespace-nowrap"
           style={{ fontFamily: "var(--font-mono)" }}
           aria-label="Enter the site"

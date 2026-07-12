@@ -2,9 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { trips } from "@/lib/destinations";
+import { SoundToggle } from "./music-player";
+import { SocialLinks } from "./social-links";
 
 const Globe = dynamic(() => import("./home-globe"), { ssr: false });
 
@@ -27,8 +30,12 @@ function shuffle<T>(arr: T[]): T[] {
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showGlobe, setShowGlobe] = useState(false);
+  const [hovering, setHovering] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const globeWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -43,24 +50,53 @@ export default function Home() {
     return shuffle(allPhotos).slice(0, 20);
   }, []);
 
-  // Marquee infinito con GSAP
+  // Entrata: foto da sinistra + globo che cresce, poi marquee infinito
   useEffect(() => {
     if (!mounted || !trackRef.current) return;
     const track = trackRef.current;
-    const totalWidth = track.scrollWidth / 2; // metà = 1 set
+    const cards = cardsRef.current.filter((c): c is HTMLDivElement => !!c);
 
-    const tween = gsap.to(track, {
-      x: -totalWidth,
-      duration: isMobile ? 60 : 90,
-      ease: "none",
-      repeat: -1,
+    const startX = -window.innerWidth * 0.5;
+    // tutto il nastro scorre da sinistra (un solo elemento = fluidissimo)
+    gsap.set(track, { x: startX });
+
+    let marquee: gsap.core.Tween | null = null;
+    const tw = gsap.to(track, {
+      x: 0,
+      duration: 1.15,
+      ease: "power3.out",
+      onComplete: () => {
+        const totalWidth = track.scrollWidth / 2;
+        marquee = gsap.to(track, {
+          x: -totalWidth,
+          duration: isMobile ? 60 : 90,
+          ease: "none",
+          repeat: -1,
+        });
+        // solo ORA monto il globo: il suo init pesante non disturba le foto
+        setShowGlobe(true);
+      },
     });
 
     return () => {
-      tween.kill();
+      tw.kill();
+      marquee?.kill();
       gsap.set(track, { x: 0 });
     };
   }, [mounted, isMobile, photos.length]);
+
+  // Entrata del globo (quando montato): piccolo → pieno, poi gira in home-globe
+  useEffect(() => {
+    if (!showGlobe || !globeWrapRef.current) return;
+    const tw = gsap.fromTo(
+      globeWrapRef.current,
+      { scale: 0.24, autoAlpha: 0, transformOrigin: "50% 50%" },
+      { scale: 1, autoAlpha: 1, duration: 1.7, ease: "power3.out" },
+    );
+    return () => {
+      tw.kill();
+    };
+  }, [showGlobe]);
 
   // Fade in shell
   useEffect(() => {
@@ -91,7 +127,10 @@ export default function Home() {
           {[...photos, ...photos].map((p, i) => (
             <div
               key={`c-${i}`}
-              className="relative shrink-0 overflow-hidden rounded-md bg-neutral-900 shadow-[0_18px_44px_-14px_rgba(0,0,0,0.75)]"
+              ref={(el) => {
+                cardsRef.current[i] = el;
+              }}
+              className="relative shrink-0 overflow-hidden rounded-md bg-neutral-900 shadow-[0_18px_44px_-14px_rgba(0,0,0,0.75)] will-change-transform"
               style={{ width: cardW, height: cardH }}
             >
               <Image
@@ -110,35 +149,66 @@ export default function Home() {
 
       {/* GLOBO CENTRALE */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="pointer-events-auto">
-          <Globe isMobile={isMobile} />
+        <div
+          ref={globeWrapRef}
+          className="pointer-events-auto will-change-transform"
+          onMouseEnter={() => setHovering(true)}
+          onMouseLeave={() => setHovering(false)}
+        >
+          {showGlobe && <Globe isMobile={isMobile} />}
         </div>
       </div>
+
+      {/* MISSIONE — su desktop appare in hover sul globo, su mobile sempre visibile */}
+      {showGlobe && (
+        <div
+          className="pointer-events-none absolute inset-x-0 z-20 flex justify-center px-6 text-center transition-opacity duration-500"
+          style={{
+            bottom: isMobile ? "13vh" : "12vh",
+            opacity: isMobile ? 0.75 : hovering ? 0.9 : 0,
+          }}
+        >
+          <div
+            className="max-w-[540px]"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            <p className="mb-3 text-white/45 text-[0.58rem] uppercase tracking-[0.35em]">
+              The map
+            </p>
+            <p className="text-white/80 text-xs md:text-sm leading-relaxed">
+              Every point is a place I&apos;ve documented. The real life you
+              don&apos;t usually see. Coloring the map, one country at a time.
+              Since 2025.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* HEADER */}
       <header className="absolute top-0 left-0 right-0 z-30 flex items-start justify-between px-6 md:px-10 pt-5 md:pt-6">
         <div
-          className="flex items-center text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none"
+          className="flex items-center gap-3 text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none"
           style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}
         >
           Luca Sammarco
+          <SoundToggle />
         </div>
         <nav
           className="flex flex-col items-end gap-1.5 text-white/80 text-xs md:text-sm"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          <a
+          <Link
             href="/about"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
             About
-          </a>
-          <a
+          </Link>
+          <Link
             href="/photography"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
             Photography
-          </a>
+          </Link>
         </nav>
       </header>
 
@@ -150,7 +220,8 @@ export default function Home() {
         <p className="tracking-[0.05em]">
           © 2026 Luca Sammarco. Milan, Italy
         </p>
-        <div className="flex gap-6">
+        <div className="flex items-center gap-6">
+          <SocialLinks />
           <a href="https://lucasammarco.com/privacy" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-80 tracking-[0.05em]">
             Privacy Policy
           </a>

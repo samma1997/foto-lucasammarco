@@ -3,6 +3,8 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { trips } from "@/lib/destinations";
+import { SoundToggle } from "../music-player";
+import { SocialLinks } from "../social-links";
 
 function cldResize(url: string, width: number): string {
   return url.replace(/w_\d+/, `w_${width}`);
@@ -221,29 +223,32 @@ export default function FotografiePage() {
 
       {/* HEADER sopra scroller (gradiente nero) */}
       <header className="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-6 md:px-10 pt-5 md:pt-6 pb-6 bg-gradient-to-b from-black via-black/90 to-transparent pointer-events-none">
-        <Link
-          href="/"
-          className="flex items-center text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none pointer-events-auto"
-          style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}
-        >
-          Luca Sammarco
-        </Link>
+        <div className="flex items-center gap-3 pointer-events-auto">
+          <Link
+            href="/"
+            className="flex items-center text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none"
+            style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}
+          >
+            Luca Sammarco
+          </Link>
+          <SoundToggle />
+        </div>
         <nav
           className="flex flex-col items-end gap-1.5 text-white/80 text-xs md:text-sm pointer-events-auto"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          <a
+          <Link
             href="/about"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
             About
-          </a>
-          <a
+          </Link>
+          <Link
             href="/photography"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
             Photography
-          </a>
+          </Link>
         </nav>
       </header>
 
@@ -255,7 +260,8 @@ export default function FotografiePage() {
         <p className="tracking-[0.05em] pointer-events-auto">
           © 2026 Luca Sammarco. Milan, Italy
         </p>
-        <div className="flex gap-6 pointer-events-auto">
+        <div className="flex items-center gap-6 pointer-events-auto">
+          <SocialLinks />
           <a
             href="https://lucasammarco.com/privacy" target="_blank" rel="noopener noreferrer"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"

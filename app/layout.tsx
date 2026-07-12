@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import PageLoader from "./page-loader";
+import SoundAutostart from "./music-player";
 
 const ibmPlex = IBM_Plex_Mono({
   variable: "--font-mono",
@@ -11,8 +12,9 @@ const ibmPlex = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Luca Sammarco — Fotografia in movimento",
-  description: "Portfolio fotografico di Luca Sammarco.",
+  title: "Luca Sammarco · Photography in motion",
+  description:
+    "Travel photography by Luca Sammarco. Documenting real life across the world, one country at a time.",
   metadataBase: new URL("https://foto.lucasammarco.com"),
 };
 
@@ -23,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="it"
+      lang="en"
       className={`${ibmPlex.variable} h-full antialiased`}
     >
       <head>
@@ -33,6 +35,7 @@ export default function RootLayout({
       <body className="min-h-full bg-black text-white">
         <PageLoader />
         {children}
+        <SoundAutostart />
       </body>
     </html>
   );

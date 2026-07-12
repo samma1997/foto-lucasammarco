@@ -5,6 +5,7 @@ import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { trips } from "@/lib/destinations";
+import { SoundToggle } from "../music-player";
 
 /* ------------------------------------------------------------------ */
 /*  Fotografia in movimento — scroll-driven frame sequence (Apple-style) */
@@ -516,7 +517,7 @@ export default function ChiSono() {
           style={{ textShadow: SHADOW }}
           className="pointer-events-none absolute z-30 left-6 md:left-[7vw] right-6 top-1/2 -translate-y-1/2"
         >
-          <p className={`${label} mb-4`}>Luca Sammarco — Developer &amp; photographer</p>
+          <p className={`${label} mb-4`}>Luca Sammarco · Developer &amp; photographer</p>
           <h1
             className="font-medium leading-[1.02] tracking-[-0.01em]"
             style={{ fontSize: "clamp(1.4rem, 7vw, 4rem)" }}
@@ -529,7 +530,7 @@ export default function ChiSono() {
             </span>
           </h1>
           <p className="mt-5 md:mt-6 max-w-[78vw] md:max-w-[26vw] font-light leading-[1.4] text-white/75 text-[3.6vw] md:text-[1rem]">
-            A developer with a love for travel and photography. I shoot everyday life — and this is only the beginning.
+            A developer with a love for travel and photography. I shoot everyday life, and this is only the beginning.
           </p>
         </div>
 
@@ -703,13 +704,16 @@ export default function ChiSono() {
 
       {/* header — allineato come in home (nome sx + nav impilato dx) */}
       <header className="pointer-events-none fixed top-0 left-0 right-0 z-[60] flex items-start justify-between px-6 md:px-10 pt-5 md:pt-6">
-        <Link
-          href="/"
-          className="pointer-events-auto flex items-center text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none"
-          style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}
-        >
-          Luca Sammarco
-        </Link>
+        <div className="pointer-events-auto flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex items-center text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none"
+            style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}
+          >
+            Luca Sammarco
+          </Link>
+          <SoundToggle />
+        </div>
         <nav
           className="pointer-events-auto flex flex-col items-end gap-1.5 text-white/80 text-xs md:text-sm"
           style={{ fontFamily: "var(--font-mono)" }}

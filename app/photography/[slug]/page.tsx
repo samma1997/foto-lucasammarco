@@ -12,6 +12,8 @@ import Link from "next/link";
 import gsap from "gsap";
 import { Observer } from "gsap/Observer";
 import { trips, type TripPhoto, type TripBook } from "@/lib/destinations";
+import { SoundToggle } from "../../music-player";
+import { SocialLinks } from "../../social-links";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(Observer);
@@ -100,6 +102,7 @@ export default function TripPage() {
   const [mounted, setMounted] = useState(false);
 
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const heroRef = useRef<HTMLElement>(null);
   const restRef = useRef<HTMLDivElement>(null);
   const isTransitioningRef = useRef(false);
   const activeTimelineRef = useRef<gsap.core.Timeline | null>(null);
@@ -241,11 +244,13 @@ export default function TripPage() {
     [goNext, goPrev],
   );
 
-  // Swipe/drag (touch+pointer) + tastiera
+  // Swipe/drag (touch+pointer) + tastiera — SOLO sull'hero, non su tutta la pagina
   useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
     const obs = Observer.create({
       type: "touch,pointer",
-      target: window,
+      target: hero,
       tolerance: 100,
       onLeft: goNext,
       onRight: goPrev,
@@ -324,34 +329,38 @@ export default function TripPage() {
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* HEADER */}
       <header className="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-6 md:px-10 pt-5 md:pt-6">
-        <Link
-          href="/"
-          className="flex items-center text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none"
-          style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}
-        >
-          Luca Sammarco
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex items-center text-white text-xs md:text-sm uppercase tracking-[0.15em] select-none"
+            style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}
+          >
+            Luca Sammarco
+          </Link>
+          <SoundToggle />
+        </div>
         <nav
           className="flex flex-col items-end gap-1.5 text-white/80 text-xs md:text-sm"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          <a
+          <Link
             href="/about"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
             About
-          </a>
-          <a
+          </Link>
+          <Link
             href="/photography"
             className="transition-opacity hover:opacity-80 tracking-[0.05em]"
           >
             Photography
-          </a>
+          </Link>
         </nav>
       </header>
 
       {/* CAROUSEL COVER */}
       <section
+        ref={heroRef}
         className="relative flex items-center justify-center overflow-hidden select-none"
         style={{
           height: "min(70vh, 720px)",
@@ -398,7 +407,7 @@ export default function TripPage() {
             className="text-white/50 text-[10px] md:text-xs tracking-[0.2em] mb-4"
             style={{ fontFamily: "var(--font-mono)" }}
           >
-            {displayedName} — {fmtMonth(displayedTrip.startDate)}
+            {displayedName} · {fmtMonth(displayedTrip.startDate)}
           </div>
           <h1
             className="text-white/85 text-sm md:text-base leading-relaxed max-w-xl mx-auto"
@@ -513,7 +522,8 @@ export default function TripPage() {
           <p className="tracking-[0.05em]">
             © 2026 Luca Sammarco. Milan, Italy
           </p>
-          <div className="flex gap-6">
+          <div className="flex items-center gap-6">
+            <SocialLinks />
             <a
               href="https://lucasammarco.com/privacy" target="_blank" rel="noopener noreferrer"
               className="transition-opacity hover:opacity-80 tracking-[0.05em]"
@@ -677,6 +687,26 @@ function BookShowcase({ book }: { book: TripBook }) {
   );
 }
 
+// URL download alta risoluzione (poster) forzando l'attachment via Cloudinary.
+function posterDownloadUrl(src: string): string {
+  return src
+    .replace("/upload/", "/upload/fl_attachment/")
+    .replace("f_auto", "f_jpg")
+    .replace("q_auto", "q_90")
+    .replace(/w_\d+/, "w_2400");
+}
+
+const LIKES_KEY = "ls-liked-photos";
+
+function readLikes(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    return new Set<string>(JSON.parse(localStorage.getItem(LIKES_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+
 function Lightbox({
   photos,
   startIndex,
@@ -687,6 +717,7 @@ function Lightbox({
   onClose: () => void;
 }) {
   const [index, setIndex] = useState(startIndex);
+  const [likes, setLikes] = useState<Set<string>>(() => new Set());
   const total = photos.length;
 
   const prev = useCallback(
@@ -697,6 +728,10 @@ function Lightbox({
     () => setIndex((i) => (i + 1) % total),
     [total],
   );
+
+  useEffect(() => {
+    setLikes(readLikes());
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -714,11 +749,28 @@ function Lightbox({
   }, [onClose, prev, next]);
 
   const photo = photos[index];
+
+  const toggleLike = useCallback(() => {
+    if (!photo) return;
+    setLikes((prevSet) => {
+      const nextSet = new Set(prevSet);
+      if (nextSet.has(photo.id)) nextSet.delete(photo.id);
+      else nextSet.add(photo.id);
+      try {
+        localStorage.setItem(LIKES_KEY, JSON.stringify([...nextSet]));
+      } catch {
+        /* ignore */
+      }
+      return nextSet;
+    });
+  }, [photo]);
+
   if (!photo) return null;
+  const liked = likes.has(photo.id);
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+      className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center gap-4 py-14 md:py-16"
       onClick={onClose}
       style={{ fontFamily: "var(--font-mono)" }}
     >
@@ -728,7 +780,7 @@ function Lightbox({
           e.stopPropagation();
           onClose();
         }}
-        aria-label="Chiudi"
+        aria-label="Close"
         className="absolute top-5 right-5 md:top-6 md:right-6 z-20 text-white/70 hover:text-white text-2xl md:text-3xl leading-none cursor-pointer w-10 h-10 flex items-center justify-center"
       >
         ×
@@ -744,7 +796,7 @@ function Lightbox({
           e.stopPropagation();
           prev();
         }}
-        aria-label="Precedente"
+        aria-label="Previous"
         className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-20 text-white/60 hover:text-white text-3xl md:text-4xl leading-none cursor-pointer w-12 h-12 flex items-center justify-center"
       >
         ‹
@@ -756,42 +808,95 @@ function Lightbox({
           e.stopPropagation();
           next();
         }}
-        aria-label="Successivo"
+        aria-label="Next"
         className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 z-20 text-white/60 hover:text-white text-3xl md:text-4xl leading-none cursor-pointer w-12 h-12 flex items-center justify-center"
       >
         ›
       </button>
 
+      {/* FOTO */}
+      <img
+        key={photo.src}
+        src={photo.src}
+        alt={photo.alt}
+        className="min-h-0 max-w-[92vw] max-h-[70vh] object-contain select-none"
+        draggable={false}
+        onClick={(e) => e.stopPropagation()}
+      />
+
+      {/* META + AZIONI — sempre SOTTO la foto, mai sopra */}
       <div
-        className="relative max-w-[95vw] max-h-[85vh] flex items-center justify-center"
+        className="flex shrink-0 flex-col items-center gap-3 px-6 text-center"
         onClick={(e) => e.stopPropagation()}
       >
-        <img
-          key={photo.src}
-          src={photo.src}
-          alt={photo.alt}
-          className="max-w-[95vw] max-h-[85vh] object-contain select-none"
-          draggable={false}
-        />
-      </div>
+        {photo.caption && (
+          <div className="text-white/60 text-[10px] md:text-xs tracking-[0.15em]">
+            {photo.caption}
+          </div>
+        )}
+        {photo.exif && (
+          <div className="text-white/35 text-[9px] md:text-[10px] tracking-[0.18em] tabular-nums">
+            {photo.exif}
+          </div>
+        )}
 
-      {(photo.caption || photo.exif) && (
-        <div className="absolute bottom-4 md:bottom-6 left-0 right-0 px-6 text-center pointer-events-none">
-          {photo.caption && (
-            <div className="text-white/60 text-[10px] md:text-xs tracking-[0.15em]">
-              {photo.caption}
-            </div>
-          )}
-          {photo.exif && (
-            <div
-              className="mt-1.5 text-white/35 text-[9px] md:text-[10px] tracking-[0.18em] tabular-nums"
-              style={{ fontFamily: "var(--font-mono)" }}
+        {/* azioni stile Pexels */}
+        <div className="mt-1 flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleLike();
+            }}
+            aria-label={liked ? "Remove like" : "Like"}
+            className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
+              liked
+                ? "border-rose-400/60 bg-rose-500/15 text-rose-400"
+                : "border-white/20 text-white/70 hover:border-white/40 hover:text-white"
+            }`}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill={liked ? "currentColor" : "none"}
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              {photo.exif}
-            </div>
-          )}
+              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
+            </svg>
+          </button>
+
+          <a
+            href={posterDownloadUrl(photo.src)}
+            download
+            onClick={(e) => e.stopPropagation()}
+            className="flex h-9 items-center gap-2 rounded-full bg-white px-4 text-[11px] font-medium uppercase tracking-[0.15em] text-black transition-opacity hover:opacity-90"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 3v12" />
+              <path d="m7 11 5 5 5-5" />
+              <path d="M5 21h14" />
+            </svg>
+            Download
+          </a>
         </div>
-      )}
+
+        <p className="max-w-xs text-white/25 text-[8px] md:text-[9px] leading-relaxed tracking-[0.12em]">
+          Free for personal use and prints. Not for commercial use.
+        </p>
+      </div>
     </div>
   );
 }
