@@ -3,6 +3,7 @@ import { IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import PageLoader from "./page-loader";
 import SoundAutostart from "./music-player";
+import { SITE, defaultOgImage } from "@/lib/seo";
 
 const ibmPlex = IBM_Plex_Mono({
   variable: "--font-mono",
@@ -12,10 +13,48 @@ const ibmPlex = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Luca Sammarco · Photography in motion",
-  description:
-    "Travel photography by Luca Sammarco. Documenting real life across the world, one country at a time.",
-  metadataBase: new URL("https://foto.lucasammarco.com"),
+  metadataBase: new URL(SITE.url),
+  title: {
+    default: SITE.title,
+    template: "%s · Luca Sammarco",
+  },
+  description: SITE.description,
+  keywords: [
+    "Luca Sammarco",
+    "travel photography",
+    "street photography",
+    "photography in motion",
+    "Bali",
+    "Japan",
+    "Sri Lanka",
+    "Thailand",
+    "documentary photography",
+  ],
+  authors: [{ name: SITE.author }],
+  creator: SITE.author,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: SITE.name,
+    locale: SITE.locale,
+    url: SITE.url,
+    title: SITE.title,
+    description: SITE.description,
+    images: [
+      {
+        url: defaultOgImage(),
+        width: 1200,
+        height: 630,
+        alt: "Photography by Luca Sammarco",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE.title,
+    description: SITE.description,
+    images: [defaultOgImage()],
+  },
 };
 
 export default function RootLayout({
