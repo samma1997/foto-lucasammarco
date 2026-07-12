@@ -951,15 +951,64 @@ function Lightbox({
             pinch={{ step: 8 }}
             panning={{ velocityDisabled: true }}
           >
-            <TransformComponent contentClass="cursor-grab active:cursor-grabbing">
+            {({ zoomIn, zoomOut, resetTransform }) => (
+              <>
+                <TransformComponent contentClass="cursor-grab active:cursor-grabbing">
+                  <img
+                    src={photo.src}
+                    alt={photo.alt}
+                    className="max-h-[80vh] max-w-[94vw] object-contain select-none"
+                    draggable={false}
+                  />
+                </TransformComponent>
 
-              <img
-                src={photo.src}
-                alt={photo.alt}
-                className="max-h-[80vh] max-w-[94vw] object-contain select-none"
-                draggable={false}
-              />
-            </TransformComponent>
+                {/* controlli zoom — click/tap, comodi anche col pollice */}
+                <div className="fixed bottom-24 right-4 z-[110] flex flex-col gap-2 md:bottom-28 md:right-6">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      zoomIn(0.6);
+                    }}
+                    aria-label="Zoom in"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white/80 backdrop-blur transition-colors hover:bg-black/70 hover:text-white"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="7" />
+                      <path d="M21 21l-4.3-4.3M11 8v6M8 11h6" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      zoomOut(0.6);
+                    }}
+                    aria-label="Zoom out"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white/80 backdrop-blur transition-colors hover:bg-black/70 hover:text-white"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="7" />
+                      <path d="M21 21l-4.3-4.3M8 11h6" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      resetTransform();
+                    }}
+                    aria-label="Reset zoom"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white/60 backdrop-blur transition-colors hover:bg-black/70 hover:text-white"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                      <path d="M3 3v5h5" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            )}
           </TransformWrapper>
         </div>
 
@@ -993,7 +1042,7 @@ function Lightbox({
             </div>
           )}
           <div className="mt-0.5 text-white/20 text-[8px] md:text-[9px] tracking-[0.15em] uppercase">
-            Double-tap · scroll · pinch to zoom
+            Tap + or pinch to zoom the details
           </div>
         </div>
       )}

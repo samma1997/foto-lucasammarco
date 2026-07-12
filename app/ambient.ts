@@ -134,6 +134,19 @@ export function startAmbient() {
   master.gain.linearRampToValueAtTime(muted ? 0 : VOL, now + 3);
   ctx.resume?.();
   notify();
+
+  // Rete di sicurezza: il browser sospende l'AudioContext quando il tab va in
+  // background o su lock mobile. Al ritorno lo riprendiamo → musica sempre
+  // continua, in loop infinito, senza interruzioni percepite.
+  const keepAlive = () => {
+    if (!ctx) return;
+    if (document.visibilityState === "visible" && ctx.state === "suspended") {
+      ctx.resume?.();
+    }
+  };
+  document.addEventListener("visibilitychange", keepAlive);
+  window.addEventListener("focus", keepAlive);
+  window.addEventListener("pageshow", keepAlive);
 }
 
 export function setAmbientMuted(m: boolean) {
