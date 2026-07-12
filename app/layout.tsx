@@ -4,6 +4,7 @@ import "./globals.css";
 import PageLoader from "./page-loader";
 import SoundAutostart from "./music-player";
 import { SITE, defaultOgImage } from "@/lib/seo";
+import { Analytics } from "@vercel/analytics/next";
 
 const ibmPlex = IBM_Plex_Mono({
   variable: "--font-mono",
@@ -75,6 +76,7 @@ export default function RootLayout({
         <PageLoader />
         {children}
         <SoundAutostart />
+        <Analytics />
       </body>
     </html>
   );

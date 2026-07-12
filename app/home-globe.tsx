@@ -68,6 +68,14 @@ export default function HomeGlobe({ isMobile }: { isMobile: boolean }) {
   // al contrario di autoRotate che non si ferma). Finisce esatto sull'Asia.
   useEffect(() => {
     if (spun.current) return;
+    // riduci movimento: nessun giro d'entrata (il globo resta pilotabile a mano)
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      spun.current = true;
+      return;
+    }
     let cancelled = false;
     let raf = 0;
     let startId = 0;

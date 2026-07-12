@@ -8,6 +8,7 @@ import gsap from "gsap";
 import { trips } from "@/lib/destinations";
 import { SoundToggle } from "./music-player";
 import { SocialLinks } from "./social-links";
+import { prefersReducedMotion } from "@/lib/motion";
 
 const Globe = dynamic(() => import("./home-globe"), { ssr: false });
 
@@ -56,6 +57,13 @@ export default function Home() {
     const track = trackRef.current;
     const cards = cardsRef.current.filter((c): c is HTMLDivElement => !!c);
 
+    // Riduci movimento: niente entrata da sinistra né marquee auto-scroll
+    if (prefersReducedMotion()) {
+      gsap.set(track, { x: 0 });
+      setShowGlobe(true);
+      return;
+    }
+
     const startX = -window.innerWidth * 0.5;
     // tutto il nastro scorre da sinistra (un solo elemento = fluidissimo)
     gsap.set(track, { x: startX });
@@ -88,6 +96,10 @@ export default function Home() {
   // Entrata del globo (quando montato): piccolo → pieno, poi gira in home-globe
   useEffect(() => {
     if (!showGlobe || !globeWrapRef.current) return;
+    if (prefersReducedMotion()) {
+      gsap.set(globeWrapRef.current, { scale: 1, autoAlpha: 1 });
+      return;
+    }
     const tw = gsap.fromTo(
       globeWrapRef.current,
       { scale: 0.24, autoAlpha: 0, transformOrigin: "50% 50%" },

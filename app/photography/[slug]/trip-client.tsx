@@ -14,6 +14,7 @@ import { Observer } from "gsap/Observer";
 import { trips, type TripPhoto, type TripBook } from "@/lib/destinations";
 import { SoundToggle } from "../../music-player";
 import { SocialLinks } from "../../social-links";
+import { prefersReducedMotion } from "@/lib/motion";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(Observer);
@@ -170,6 +171,7 @@ export default function TripPage() {
     const oldIdx = currentIdxRef.current;
     const newIdx = (oldIdx + direction + N) % N;
     const mobile = isMobileRef.current;
+    const rm = prefersReducedMotion(); // transizioni istantanee
 
     activeTimelineRef.current?.kill();
 
@@ -194,7 +196,7 @@ export default function TripPage() {
           scale: layout.scale,
           opacity: layout.opacity,
           zIndex: layout.zIndex,
-          duration: 0.85,
+          duration: rm ? 0 : 0.85,
         },
         0,
       );
@@ -206,15 +208,15 @@ export default function TripPage() {
     if (rest) {
       tl.to(
         rest,
-        { opacity: 0, y: 10, duration: 0.3, ease: "power2.in" },
+        { opacity: 0, y: 10, duration: rm ? 0 : 0.3, ease: "power2.in" },
         0,
       );
-      tl.call(() => setDisplayedIdx(newIdx), [], 0.32);
+      tl.call(() => setDisplayedIdx(newIdx), [], rm ? 0 : 0.32);
       tl.fromTo(
         rest,
         { opacity: 0, y: 8 },
-        { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" },
-        0.34,
+        { opacity: 1, y: 0, duration: rm ? 0 : 0.45, ease: "power2.out" },
+        rm ? 0 : 0.34,
       );
     } else {
       tl.call(() => setDisplayedIdx(newIdx), [], 0);
@@ -269,6 +271,7 @@ export default function TripPage() {
 
   // Lenis smooth scroll
   useEffect(() => {
+    if (prefersReducedMotion()) return; // scroll nativo, niente smooth
     let rafId = 0;
     let cancelled = false;
     let ro: ResizeObserver | null = null;
@@ -576,7 +579,7 @@ function BookShowcase({ book }: { book: TripBook }) {
 
   // auto-cycle (si ferma quando è aperto lo zoom); riparte a ogni cambio
   useEffect(() => {
-    if (zoom) return;
+    if (zoom || prefersReducedMotion()) return;
     const id = window.setInterval(
       () => setActive((a) => (a + 1) % images.length),
       3600,
@@ -718,6 +721,7 @@ function Lightbox({
 }) {
   const [index, setIndex] = useState(startIndex);
   const [likes, setLikes] = useState<Set<string>>(() => new Set());
+  const [copied, setCopied] = useState(false);
   const total = photos.length;
 
   const prev = useCallback(
@@ -763,6 +767,27 @@ function Lightbox({
       }
       return nextSet;
     });
+  }, [photo]);
+
+  const share = useCallback(async () => {
+    if (typeof window === "undefined" || !photo) return;
+    const url = window.location.href;
+    const title = photo.caption || "Photo by Luca Sammarco";
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text: "Photo by Luca Sammarco", url });
+        return;
+      }
+    } catch {
+      return; // condivisione annullata dall'utente
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* ignore */
+    }
   }, [photo]);
 
   if (!photo) return null;
@@ -835,6 +860,52 @@ function Lightbox({
               <path d="M5 21h14" />
             </svg>
           </a>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              share();
+            }}
+            aria-label="Share"
+            title={copied ? "Link copied" : "Share"}
+            className={`relative flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
+              copied
+                ? "border-emerald-400/60 text-emerald-400"
+                : "border-white/20 text-white/70 hover:border-white/40 hover:text-white"
+            }`}
+          >
+            {copied ? (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            ) : (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4" />
+              </svg>
+            )}
+          </button>
 
           <button
             type="button"

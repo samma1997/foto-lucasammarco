@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@types/three": "^0.185.0",
+    "@vercel/analytics": "^2.0.1",
     "@vfx-js/core": "^1.1.0",
     "d3-geo-projection": "^4.0.0",
     "gsap": "^3.15.0",
