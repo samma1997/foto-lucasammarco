@@ -770,78 +770,20 @@ function Lightbox({
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center gap-4 py-14 md:py-16"
+      className="fixed inset-0 z-[100] flex flex-col bg-black/95"
       onClick={onClose}
       style={{ fontFamily: "var(--font-mono)" }}
     >
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
-        aria-label="Close"
-        className="absolute top-5 right-5 md:top-6 md:right-6 z-20 text-white/70 hover:text-white text-2xl md:text-3xl leading-none cursor-pointer w-10 h-10 flex items-center justify-center"
-      >
-        ×
-      </button>
-
-      <div className="absolute top-5 left-5 md:top-6 md:left-6 z-20 text-white/60 text-[10px] md:text-xs tracking-[0.2em] pointer-events-none">
-        {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-      </div>
-
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          prev();
-        }}
-        aria-label="Previous"
-        className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-20 text-white/60 hover:text-white text-3xl md:text-4xl leading-none cursor-pointer w-12 h-12 flex items-center justify-center"
-      >
-        ‹
-      </button>
-
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          next();
-        }}
-        aria-label="Next"
-        className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 z-20 text-white/60 hover:text-white text-3xl md:text-4xl leading-none cursor-pointer w-12 h-12 flex items-center justify-center"
-      >
-        ›
-      </button>
-
-      {/* FOTO */}
-      <img
-        key={photo.src}
-        src={photo.src}
-        alt={photo.alt}
-        className="min-h-0 max-w-[92vw] max-h-[70vh] object-contain select-none"
-        draggable={false}
-        onClick={(e) => e.stopPropagation()}
-      />
-
-      {/* META + AZIONI — sempre SOTTO la foto, mai sopra */}
+      {/* TOP BAR — contatore a sx, azioni a dx (like · download · close) */}
       <div
-        className="flex shrink-0 flex-col items-center gap-3 px-6 text-center"
+        className="flex shrink-0 items-center justify-between px-4 py-3 md:px-6 md:py-4"
         onClick={(e) => e.stopPropagation()}
       >
-        {photo.caption && (
-          <div className="text-white/60 text-[10px] md:text-xs tracking-[0.15em]">
-            {photo.caption}
-          </div>
-        )}
-        {photo.exif && (
-          <div className="text-white/35 text-[9px] md:text-[10px] tracking-[0.18em] tabular-nums">
-            {photo.exif}
-          </div>
-        )}
+        <span className="text-white/60 text-[10px] md:text-xs tracking-[0.2em] tabular-nums">
+          {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+        </span>
 
-        {/* azioni stile Pexels */}
-        <div className="mt-1 flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5 md:gap-2">
           <button
             type="button"
             onClick={(e) => {
@@ -849,6 +791,7 @@ function Lightbox({
               toggleLike();
             }}
             aria-label={liked ? "Remove like" : "Like"}
+            title={liked ? "Liked" : "Like"}
             className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
               liked
                 ? "border-rose-400/60 bg-rose-500/15 text-rose-400"
@@ -873,15 +816,17 @@ function Lightbox({
             href={posterDownloadUrl(photo.src)}
             download
             onClick={(e) => e.stopPropagation()}
-            className="flex h-9 items-center gap-2 rounded-full bg-white px-4 text-[11px] font-medium uppercase tracking-[0.15em] text-black transition-opacity hover:opacity-90"
+            aria-label="Download poster"
+            title="Download — personal use & prints only"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white/70 transition-colors hover:border-white/40 hover:text-white"
           >
             <svg
-              width="15"
-              height="15"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
@@ -889,14 +834,79 @@ function Lightbox({
               <path d="m7 11 5 5 5-5" />
               <path d="M5 21h14" />
             </svg>
-            Download
           </a>
-        </div>
 
-        <p className="max-w-xs text-white/25 text-[8px] md:text-[9px] leading-relaxed tracking-[0.12em]">
-          Free for personal use and prints. Not for commercial use.
-        </p>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            aria-label="Close"
+            className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-full text-white/70 hover:text-white text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
       </div>
+
+      {/* FOTO — riempie tutto lo spazio disponibile */}
+      <div
+        className="relative flex min-h-0 flex-1 items-center justify-center px-2 md:px-4"
+        onClick={onClose}
+      >
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            prev();
+          }}
+          aria-label="Previous"
+          className="absolute left-1 md:left-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center text-3xl md:text-4xl leading-none text-white/60 hover:text-white"
+        >
+          ‹
+        </button>
+
+        <img
+          key={photo.src}
+          src={photo.src}
+          alt={photo.alt}
+          className="max-h-full max-w-full object-contain select-none"
+          draggable={false}
+          onClick={(e) => e.stopPropagation()}
+        />
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            next();
+          }}
+          aria-label="Next"
+          className="absolute right-1 md:right-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center text-3xl md:text-4xl leading-none text-white/60 hover:text-white"
+        >
+          ›
+        </button>
+      </div>
+
+      {/* CAPTION — fascia sottile sotto la foto, mai sovrapposta */}
+      {(photo.caption || photo.exif) && (
+        <div
+          className="flex shrink-0 flex-col items-center gap-1 px-6 pb-3 pt-2 text-center md:pb-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {photo.caption && (
+            <div className="text-white/60 text-[10px] md:text-xs tracking-[0.15em]">
+              {photo.caption}
+            </div>
+          )}
+          {photo.exif && (
+            <div className="text-white/35 text-[9px] md:text-[10px] tracking-[0.18em] tabular-nums">
+              {photo.exif}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
