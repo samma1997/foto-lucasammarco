@@ -16,6 +16,7 @@ import { SoundToggle } from "../../music-player";
 import { SocialLinks } from "../../social-links";
 import { prefersReducedMotion } from "@/lib/motion";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { availableCategories, categoriesForPhotoId } from "@/lib/categories";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(Observer);
@@ -101,6 +102,7 @@ export default function TripPage() {
   const [displayedIdx, setDisplayedIdx] = useState(initialIdx);
   const [isMobile, setIsMobile] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [activeTheme, setActiveTheme] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -130,6 +132,10 @@ export default function TripPage() {
   useEffect(() => {
     lightboxIndexRef.current = lightboxIndex;
   }, [lightboxIndex]);
+  // cambio viaggio → azzera il filtro tema
+  useEffect(() => {
+    setActiveTheme(null);
+  }, [displayedIdx]);
 
   // Mobile detection
   useEffect(() => {
@@ -324,9 +330,15 @@ export default function TripPage() {
   const displayedName =
     DISPLAY_NAME[displayedTrip.slug] ?? displayedTrip.destination;
   // TUTTE le foto del viaggio, in ordine cronologico (per data, stabile)
-  const gridPhotos = displayedTrip.photos
+  const allGridPhotos = displayedTrip.photos
     .filter((p) => p.srcThumb !== displayedTrip.coverSrc)
     .sort((a, b) => a.date.localeCompare(b.date));
+  // categorie presenti in questo viaggio (curate a mano via /tag)
+  const themeChips = availableCategories(allGridPhotos);
+  // foto mostrate: tutte, o solo quelle della categoria attiva
+  const gridPhotos = activeTheme
+    ? allGridPhotos.filter((p) => categoriesForPhotoId(p.id).includes(activeTheme))
+    : allGridPhotos;
   const book = displayedTrip.book;
 
   return (
@@ -428,6 +440,44 @@ export default function TripPage() {
             </div>
           )}
         </section>
+
+        {/* FILTRI PER TEMA (derivati dal contenuto delle foto) */}
+        {themeChips.length > 1 && (
+          <section className="px-3 md:px-4 pb-5">
+            <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTheme(null)}
+                className={`rounded-full border px-3.5 py-1.5 text-[10px] md:text-xs uppercase tracking-[0.15em] transition-colors ${
+                  activeTheme === null
+                    ? "border-white bg-white text-black"
+                    : "border-white/20 text-white/60 hover:border-white/40 hover:text-white"
+                }`}
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                All{" "}
+                <span className="opacity-50">{allGridPhotos.length}</span>
+              </button>
+              {themeChips.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() =>
+                    setActiveTheme((cur) => (cur === t.key ? null : t.key))
+                  }
+                  className={`rounded-full border px-3.5 py-1.5 text-[10px] md:text-xs uppercase tracking-[0.15em] transition-colors ${
+                    activeTheme === t.key
+                      ? "border-white bg-white text-black"
+                      : "border-white/20 text-white/60 hover:border-white/40 hover:text-white"
+                  }`}
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  {t.label} <span className="opacity-50">{t.count}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* GRIGLIA */}
         <section className="px-3 md:px-4 pb-24">
