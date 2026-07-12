@@ -15,6 +15,7 @@ import { trips, type TripPhoto, type TripBook } from "@/lib/destinations";
 import { SoundToggle } from "../../music-player";
 import { SocialLinks } from "../../social-links";
 import { prefersReducedMotion } from "@/lib/motion";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(Observer);
@@ -938,14 +939,29 @@ function Lightbox({
           ‹
         </button>
 
-        <img
-          key={photo.src}
-          src={photo.src}
-          alt={photo.alt}
-          className="max-h-full max-w-full object-contain select-none"
-          draggable={false}
-          onClick={(e) => e.stopPropagation()}
-        />
+        <div onClick={(e) => e.stopPropagation()}>
+          <TransformWrapper
+            key={photo.src}
+            minScale={1}
+            maxScale={6}
+            initialScale={1}
+            centerOnInit
+            doubleClick={{ mode: "toggle", step: 1.8 }}
+            wheel={{ step: 0.2 }}
+            pinch={{ step: 8 }}
+            panning={{ velocityDisabled: true }}
+          >
+            <TransformComponent contentClass="cursor-grab active:cursor-grabbing">
+
+              <img
+                src={photo.src}
+                alt={photo.alt}
+                className="max-h-[80vh] max-w-[94vw] object-contain select-none"
+                draggable={false}
+              />
+            </TransformComponent>
+          </TransformWrapper>
+        </div>
 
         <button
           type="button"
@@ -976,6 +992,9 @@ function Lightbox({
               {photo.exif}
             </div>
           )}
+          <div className="mt-0.5 text-white/20 text-[8px] md:text-[9px] tracking-[0.15em] uppercase">
+            Double-tap · scroll · pinch to zoom
+          </div>
         </div>
       )}
     </div>
