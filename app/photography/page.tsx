@@ -5,6 +5,7 @@ import Link from "next/link";
 import { trips } from "@/lib/destinations";
 import { SoundToggle } from "../music-player";
 import { SocialLinks } from "../social-links";
+import MusicCredit from "../music-credit";
 
 function cldResize(url: string, width: number): string {
   return url.replace(/w_\d+/, `w_${width}`);
@@ -257,9 +258,12 @@ export default function FotografiePage() {
         className="absolute bottom-0 left-0 right-0 z-40 flex flex-col md:flex-row items-center md:items-end md:justify-between gap-2 md:gap-0 px-6 md:px-10 pt-8 pb-4 md:pb-6 text-white/70 text-[10px] md:text-xs bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none"
         style={{ fontFamily: "var(--font-mono)" }}
       >
-        <p className="tracking-[0.05em] pointer-events-auto">
-          © 2026 Luca Sammarco. Milan, Italy
-        </p>
+        <div className="pointer-events-auto flex flex-col items-center gap-0.5 md:items-start">
+          <p className="tracking-[0.05em]">
+            © 2026 Luca Sammarco. Milan, Italy
+          </p>
+          <MusicCredit className="text-white/35 text-[9px] md:text-[10px] tracking-[0.05em]" />
+        </div>
         <div className="flex items-center gap-6 pointer-events-auto">
           <SocialLinks />
           <a

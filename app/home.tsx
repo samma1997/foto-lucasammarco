@@ -8,6 +8,7 @@ import gsap from "gsap";
 import { trips } from "@/lib/destinations";
 import { SoundToggle } from "./music-player";
 import { SocialLinks } from "./social-links";
+import MusicCredit from "./music-credit";
 import { prefersReducedMotion } from "@/lib/motion";
 
 const Globe = dynamic(() => import("./home-globe"), { ssr: false });
@@ -229,9 +230,12 @@ export default function Home() {
         className="absolute bottom-0 left-0 right-0 z-30 flex flex-col md:flex-row items-center md:items-end md:justify-between gap-2 md:gap-0 px-6 md:px-10 pb-4 md:pb-6 text-white/70 text-[10px] md:text-xs"
         style={{ fontFamily: "var(--font-mono)" }}
       >
-        <p className="tracking-[0.05em]">
-          © 2026 Luca Sammarco. Milan, Italy
-        </p>
+        <div className="flex flex-col items-center gap-0.5 md:items-start">
+          <p className="tracking-[0.05em]">
+            © 2026 Luca Sammarco. Milan, Italy
+          </p>
+          <MusicCredit className="text-white/35 text-[9px] md:text-[10px] tracking-[0.05em]" />
+        </div>
         <div className="flex items-center gap-6">
           <SocialLinks />
           <a href="https://lucasammarco.com/privacy" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-80 tracking-[0.05em]">

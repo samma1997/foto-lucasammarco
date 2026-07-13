@@ -17,6 +17,7 @@ import { SocialLinks } from "../../social-links";
 import { prefersReducedMotion } from "@/lib/motion";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { availableCategories, categoriesForPhotoId } from "@/lib/categories";
+import MusicCredit from "../../music-credit";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(Observer);
@@ -573,9 +574,12 @@ export default function TripPage() {
           className="flex flex-col md:flex-row items-center md:items-end md:justify-between gap-2 md:gap-0 px-6 md:px-10 pb-4 md:pb-6 text-white/70 text-[10px] md:text-xs"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          <p className="tracking-[0.05em]">
-            © 2026 Luca Sammarco. Milan, Italy
-          </p>
+          <div className="flex flex-col items-center gap-0.5 md:items-start">
+            <p className="tracking-[0.05em]">
+              © 2026 Luca Sammarco. Milan, Italy
+            </p>
+            <MusicCredit className="text-white/35 text-[9px] md:text-[10px] tracking-[0.05em]" />
+          </div>
           <div className="flex items-center gap-6">
             <SocialLinks />
             <a

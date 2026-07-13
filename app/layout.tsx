@@ -3,6 +3,7 @@ import { IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import PageLoader from "./page-loader";
 import SoundAutostart from "./music-player";
+import MoodPicker from "./mood-picker";
 import { SITE, defaultOgImage } from "@/lib/seo";
 import { Analytics } from "@vercel/analytics/next";
 
@@ -76,6 +77,7 @@ export default function RootLayout({
         <PageLoader />
         {children}
         <SoundAutostart />
+        <MoodPicker />
         <Analytics />
       </body>
     </html>
