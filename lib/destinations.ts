@@ -1,15 +1,15 @@
 // -----------------------------------------------------------------------------
-// destinations.ts - Travel photography data layer for SammaPix portfolio
-// All image sources use picsum.photos placeholders (seed-based, deterministic).
-// Replace src/srcThumb values with real CDN URLs when photos are ready.
+// destinations.ts - Travel photography data layer for il portfolio
+// Le foto sono reali, servite da Cloudinary (res.cloudinary.com/do9hrcwn1,
+// cartella sammapix/portfolio/<viaggio>/...) con trasformazioni f_auto/q_auto.
 // -----------------------------------------------------------------------------
 
 import exifMap from "./photo-exif.json";
 
 export interface TripPhoto {
   id: string;
-  src: string;       // full resolution placeholder: 1200x800
-  srcThumb: string;  // thumbnail placeholder: 600x400
+  src: string;       // full resolution (Cloudinary, w_1200 ca.)
+  srcThumb: string;  // thumbnail (Cloudinary, w_600)
   alt: string;       // keyword-rich alt text for SEO & accessibility
   caption: string;   // short poetic caption displayed under the photo
   description: string; // 60-80 word SEO paragraph describing the scene

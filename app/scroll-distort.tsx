@@ -78,14 +78,21 @@ export default function ScrollDistort({ selector }: { selector: string }) {
     });
     mo.observe(document.body, { childList: true, subtree: true });
 
-    let last = window.scrollY;
-    let vel = 0; // velocità smussata (px/frame)
     let scale = 0; // scale corrente applicato
-    let on = false; // filtro attualmente attivo?
     let raf = 0;
 
     const MAX = 12; // distorsione massima (leggera)
     const SENS = 0.6; // sensibilità velocità → distorsione
+
+    // Storia posizioni per stimare la velocità come spostamento NETTO su una
+    // finestra breve, non frame-per-frame. Serve per Safari/WebKit: lì lo
+    // smooth-scroll di Lenis oscilla a riposo (micro avanti/indietro), quindi
+    // il delta per-frame resterebbe alto e la distorsione non rientrerebbe mai.
+    // Sul netto l'oscillazione si annulla → da fermi lo scale torna a 0.
+    const WINDOW_MS = 120;
+    const hist: { t: number; y: number }[] = [
+      { t: performance.now(), y: window.scrollY },
+    ];
 
     // Applica/rimuove il filtro SOLO sulle immagini visibili. Se in B/N mantiene
     // grayscale + distorsione. Da fermi torna a "" (lo stylesheet gestisce il B/N).
@@ -107,28 +114,37 @@ export default function ScrollDistort({ selector }: { selector: string }) {
       } else if (filtered.size) {
         for (const n of [...filtered]) clear(n);
       }
-      on = want;
     };
 
-    const loop = () => {
+    const loop = (now: number) => {
       const y = window.scrollY;
-      const dv = Math.abs(y - last);
-      last = y;
+      hist.push({ t: now, y });
+      // tengo solo l'ultima finestra (~120ms)
+      while (hist.length > 1 && now - hist[0].t > WINDOW_MS) hist.shift();
 
-      // velocità smussata + decadimento
-      vel += (dv - vel) * 0.25;
+      // velocità = spostamento netto sulla finestra, mediato per-frame
+      const oldest = hist[0];
+      const frames = Math.max(1, (now - oldest.t) / 16.7);
+      const vel = Math.abs(y - oldest.y) / frames;
       const target = Math.min(MAX, vel * SENS);
 
-      // avvicino lo scale al target (lerp) → morbido sia in salita che in rientro
-      scale += (target - scale) * 0.2;
+      // Rientro ASIMMETRICO: salita morbida, ma da fermo taglio netto. Su
+      // Safari/WebKit il filtro SVG è pesante e cala l'fps: un rientro morbido
+      // si trascinerebbe. Tagliando subito, il filtro si spegne (<0.4) e la GPU
+      // si libera → l'fps risale.
+      if (target >= scale) {
+        scale += (target - scale) * 0.25; // onset morbido
+      } else {
+        scale += (target - scale) * 0.45; // rientro deciso
+        if (target < 0.3 && scale < 0.6) scale = 0; // da fermo → stop immediato
+      }
       if (scale < 0.05) scale = 0;
       disp.setAttribute("scale", scale.toFixed(2));
 
-      // applico il filtro solo quando serve (evito costo GPU da fermi/scroll lento)
-      const want = scale > 0.4;
-      if (want !== on || (want && filtered.size !== visible.size)) {
-        setFilter(want);
-      }
+      // filtro solo sulle visibili quando serve; chiamato ogni frame così che
+      // cambi di viewport / B/N / keep-color siano sempre riflessi (costo minimo:
+      // ~9 elementi, con guardia sul valore già impostato).
+      setFilter(scale > 0.4);
 
       raf = requestAnimationFrame(loop);
     };
