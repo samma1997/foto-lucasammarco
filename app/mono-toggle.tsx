@@ -32,38 +32,61 @@ export function MonoToggle({ className = "" }: { className?: string }) {
     e.stopPropagation();
 
     const doc = document as ViewTransitionDoc;
-    // niente animazione a macchia: solo crossfade filter (fallback)
+    // niente distorsione: solo crossfade filter (fallback)
     if (!doc.startViewTransition || prefersReducedMotion()) {
       apply();
       return;
     }
 
-    // punto d'origine della macchia = centro del bottone cliccato
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-
     const transition = doc.startViewTransition(apply);
     transition.ready.then(() => {
-      const endRadius = Math.hypot(
-        Math.max(x, window.innerWidth - x),
-        Math.max(y, window.innerHeight - y),
-      );
+      const DUR = 900;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const isSmall = w < 768;
+
+      // reveal RADIALE dal centro dello schermo: la nuova versione esplode
+      // dal mezzo verso i bordi mentre si distorce → "parte dal centro"
+      const cx = w / 2;
+      const cy = h / 2;
+      const endRadius = Math.hypot(cx, cy);
       document.documentElement.animate(
         {
           clipPath: [
-            `circle(0px at ${x}px ${y}px)`,
-            `circle(${endRadius}px at ${x}px ${y}px)`,
+            `circle(0px at ${cx}px ${cy}px)`,
+            `circle(${endRadius}px at ${cx}px ${cy}px)`,
           ],
+          opacity: [0.2, 1],
         },
         {
-          // durata più ampia + easing "silky" (easeOutExpo): scatto iniziale
-          // morbido e lunga frenata → sensazione molto fluida
-          duration: 950,
-          easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+          duration: DUR,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
           pseudoElement: "::view-transition-new(root)",
         },
       );
+
+      // distorsione liquida: guido scale del displacement + il "flusso" della
+      // turbolenza in rAF; parte forte e si assesta a 0 → l'immagine cola
+      const disp = document.getElementById("mono-disp");
+      const turb = document.getElementById("mono-turb");
+      if (!disp || !turb) return;
+
+      const start = performance.now();
+      // intensità ridotta su mobile per fluidità (il displacement full-screen
+      // è pesante su GPU piccole)
+      const MAX = isSmall ? 150 : 260;
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / DUR);
+        const ease = 1 - Math.pow(1 - t, 3); // easeOutCubic
+        const scale = MAX * (1 - ease);
+        disp.setAttribute("scale", String(scale));
+        // la turbolenza "respira" un filo mentre si assesta → effetto vivo
+        const f = 0.012 + 0.01 * (1 - ease);
+        turb.setAttribute("baseFrequency", `${f} ${f * 1.3}`);
+        if (t < 1) requestAnimationFrame(tick);
+        else disp.setAttribute("scale", "0");
+      };
+      requestAnimationFrame(tick);
     });
   };
 

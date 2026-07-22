@@ -74,6 +74,39 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
       </head>
       <body className="min-h-full bg-black text-white">
+        {/* filtro di distorsione liquida per la transizione colore ⇄ B/N */}
+        <svg
+          aria-hidden="true"
+          width="0"
+          height="0"
+          style={{ position: "absolute", pointerEvents: "none" }}
+        >
+          <filter
+            id="mono-distort"
+            x="-20%"
+            y="-20%"
+            width="140%"
+            height="140%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feTurbulence
+              id="mono-turb"
+              type="fractalNoise"
+              baseFrequency="0.012"
+              numOctaves="2"
+              seed="7"
+              result="noise"
+            />
+            <feDisplacementMap
+              id="mono-disp"
+              in="SourceGraphic"
+              in2="noise"
+              scale="0"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
+          </filter>
+        </svg>
         <PageLoader />
         {children}
         <SoundAutostart />

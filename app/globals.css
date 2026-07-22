@@ -49,6 +49,9 @@ html.mono canvas {
 }
 ::view-transition-new(root) {
   z-index: 2147483646;
+  /* distorsione liquida guidata via JS (scale del feDisplacementMap) */
+  filter: url(#mono-distort);
+  will-change: opacity, filter;
 }
 
 /* barrette equalizzatore audio */
