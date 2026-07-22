@@ -14,6 +14,43 @@ body {
   font-family: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
+/* ── Modalità Bianco & Nero (toggle globale) ─────────────────────────
+   La classe `mono` su <html> desatura TUTTE le immagini/video/canvas.
+   La transizione è sempre attiva → color ↔ mono avviene con un crossfade
+   morbido su tutte le foto contemporaneamente. */
+img,
+video,
+canvas {
+  transition: filter 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+html.mono img,
+html.mono video,
+html.mono canvas {
+  filter: grayscale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  img,
+  video,
+  canvas {
+    transition: none;
+  }
+}
+
+/* Effetto "macchia": la nuova versione si rivela con un clip-path circolare
+   dal punto del click (animazione impostata in JS via Web Animations API).
+   Qui disattiviamo solo il crossfade di default e mettiamo il nuovo frame sopra. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2147483646;
+}
+
 /* barrette equalizzatore audio */
 @keyframes soundbar {
   0%,

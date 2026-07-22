@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { trips } from "@/lib/destinations";
 import { SoundToggle } from "../music-player";
+import { MonoToggle } from "../mono-toggle";
 import { SocialLinks } from "../social-links";
 import MusicCredit from "../music-credit";
 
@@ -233,6 +234,7 @@ export default function FotografiePage() {
             Luca Sammarco
           </Link>
           <SoundToggle />
+          <MonoToggle />
         </div>
         <nav
           className="flex flex-col items-end gap-1.5 text-white/80 text-xs md:text-sm pointer-events-auto"

@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { trips } from "@/lib/destinations";
 import { SoundToggle } from "./music-player";
+import { MonoToggle } from "./mono-toggle";
 import { SocialLinks } from "./social-links";
 import MusicCredit from "./music-credit";
 import { prefersReducedMotion } from "@/lib/motion";
@@ -205,6 +206,7 @@ export default function Home() {
         >
           Luca Sammarco
           <SoundToggle />
+          <MonoToggle />
         </div>
         <nav
           className="flex flex-col items-end gap-1.5 text-white/80 text-xs md:text-sm"

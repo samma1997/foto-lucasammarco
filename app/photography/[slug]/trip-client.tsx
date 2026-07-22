@@ -13,6 +13,7 @@ import gsap from "gsap";
 import { Observer } from "gsap/Observer";
 import { trips, type TripPhoto, type TripBook } from "@/lib/destinations";
 import { SoundToggle } from "../../music-player";
+import { MonoToggle } from "../../mono-toggle";
 import { SocialLinks } from "../../social-links";
 import { prefersReducedMotion } from "@/lib/motion";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -105,6 +106,8 @@ export default function TripPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  // numero colonne griglia su desktop (2 / 3 / 4) — persistito
+  const [cols, setCols] = useState(3);
 
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const heroRef = useRef<HTMLElement>(null);
@@ -144,6 +147,24 @@ export default function TripPage() {
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
+  }, []);
+
+  // preferenza colonne griglia (desktop) da localStorage
+  useEffect(() => {
+    try {
+      const saved = Number(localStorage.getItem("ls-grid-cols"));
+      if (saved === 2 || saved === 3 || saved === 4) setCols(saved);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const pickCols = useCallback((n: number) => {
+    setCols(n);
+    try {
+      localStorage.setItem("ls-grid-cols", String(n));
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   // Layout istantaneo (mount + resize) — NON riparte su currentIdx change
@@ -355,6 +376,7 @@ export default function TripPage() {
             Luca Sammarco
           </Link>
           <SoundToggle />
+          <MonoToggle />
         </div>
         <nav
           className="flex flex-col items-end gap-1.5 text-white/80 text-xs md:text-sm"
@@ -482,7 +504,39 @@ export default function TripPage() {
 
         {/* GRIGLIA */}
         <section className="px-3 md:px-4 pb-24">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 max-w-[1600px] mx-auto">
+          {/* selettore layout — solo desktop: 2 / 3 / 4 colonne */}
+          <div className="mx-auto mb-4 hidden max-w-[1600px] items-center justify-end gap-2 md:flex">
+            <span
+              className="mr-1 text-white/30 text-[10px] uppercase tracking-[0.2em]"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              Layout
+            </span>
+            {[2, 3, 4].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => pickCols(n)}
+                aria-label={`${n} columns`}
+                aria-pressed={cols === n}
+                title={`${n} columns`}
+                className={`flex h-8 w-8 items-center justify-center rounded border transition-colors ${
+                  cols === n
+                    ? "border-white bg-white text-black"
+                    : "border-white/20 text-white/50 hover:border-white/40 hover:text-white"
+                }`}
+              >
+                <ColsIcon n={n} />
+              </button>
+            ))}
+          </div>
+
+          <div
+            className="grid gap-2 md:gap-3 max-w-[1600px] mx-auto"
+            style={{
+              gridTemplateColumns: `repeat(${isMobile ? 2 : cols}, minmax(0, 1fr))`,
+            }}
+          >
             {gridPhotos.map((p, i) => (
               <button
                 key={p.id}
@@ -618,6 +672,28 @@ export default function TripPage() {
         />
       )}
     </div>
+  );
+}
+
+/* Iconcina "N colonne": N barrette verticali dentro un riquadro */
+function ColsIcon({ n }: { n: number }) {
+  const gap = 2;
+  const pad = 3;
+  const w = (18 - pad * 2 - gap * (n - 1)) / n;
+  return (
+    <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true">
+      {Array.from({ length: n }).map((_, i) => (
+        <rect
+          key={i}
+          x={pad + i * (w + gap)}
+          y={pad}
+          width={w}
+          height={18 - pad * 2}
+          rx="1"
+          fill="currentColor"
+        />
+      ))}
+    </svg>
   );
 }
 

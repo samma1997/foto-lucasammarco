@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { trips } from "@/lib/destinations";
 import { SoundToggle } from "../music-player";
+import { MonoToggle } from "../mono-toggle";
 
 /* ------------------------------------------------------------------ */
 /*  Fotografia in movimento — scroll-driven frame sequence (Apple-style) */
@@ -713,6 +714,7 @@ export default function ChiSono() {
             Luca Sammarco
           </Link>
           <SoundToggle />
+          <MonoToggle />
         </div>
         <nav
           className="pointer-events-auto flex flex-col items-end gap-1.5 text-white/80 text-xs md:text-sm"
