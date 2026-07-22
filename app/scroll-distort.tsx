@@ -92,10 +92,13 @@ export default function ScrollDistort({ selector }: { selector: string }) {
     const setFilter = (want: boolean) => {
       const mono = document.documentElement.classList.contains("mono");
       if (want) {
-        const fstr = mono
-          ? "grayscale(1) url(#scroll-distort)"
-          : "url(#scroll-distort)";
         for (const n of visible) {
+          // le foto marcate "a colori" (keep-color) restano a colori anche in
+          // B/N: distorsione senza grayscale.
+          const fstr =
+            mono && !n.classList.contains("keep-color")
+              ? "grayscale(1) url(#scroll-distort)"
+              : "url(#scroll-distort)";
           if (n.style.filter !== fstr) n.style.filter = fstr;
           filtered.add(n);
         }

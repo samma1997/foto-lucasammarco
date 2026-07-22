@@ -28,6 +28,13 @@ html.mono video,
 html.mono canvas {
   filter: grayscale(1);
 }
+/* Override per-foto: "riporta a colori" anche col B/N globale attivo.
+   La scelta è salvata in localStorage (vale per griglia + lightbox).
+   Specificità (2 classi) > `html.mono img` (1 classe) → vince senza !important.
+   La transizione filter 0.9s già definita sopra fa il crossfade colore⇄B/N. */
+html.mono img.keep-color {
+  filter: none;
+}
 @media (prefers-reduced-motion: reduce) {
   img,
   video,

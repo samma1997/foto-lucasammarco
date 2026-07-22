@@ -109,6 +109,8 @@ export default function TripPage() {
   const [mounted, setMounted] = useState(false);
   // numero colonne griglia su desktop (2 / 3 / 4) — persistito
   const [cols, setCols] = useState(3);
+  // foto forzate "a colori" (override del B/N globale) — persistite
+  const [colorSet, setColorSet] = useState<Set<string>>(() => new Set());
 
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const heroRef = useRef<HTMLElement>(null);
@@ -166,6 +168,24 @@ export default function TripPage() {
     } catch {
       /* ignore */
     }
+  }, []);
+
+  // foto "a colori" salvate → idrata dopo il mount (evita mismatch SSR)
+  useEffect(() => {
+    setColorSet(readColorPhotos());
+  }, []);
+  const toggleColor = useCallback((id: string) => {
+    setColorSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      try {
+        localStorage.setItem(COLOR_KEY, JSON.stringify([...next]));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
   }, []);
 
   // Layout istantaneo (mount + resize) — NON riparte su currentIdx change
@@ -559,7 +579,9 @@ export default function TripPage() {
                   alt={p.alt}
                   loading={i < 6 ? "eager" : "lazy"}
                   decoding="async"
-                  className="sd-img w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                  className={`sd-img w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02] ${
+                    colorSet.has(p.id) ? "keep-color" : ""
+                  }`}
                   draggable={false}
                 />
               </button>
@@ -673,6 +695,8 @@ export default function TripPage() {
           photos={gridPhotos}
           startIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
+          colorSet={colorSet}
+          onToggleColor={toggleColor}
         />
       )}
     </div>
@@ -845,19 +869,47 @@ function readLikes(): Set<string> {
   }
 }
 
+// Foto forzate "a colori": restano a colori anche col B/N globale attivo.
+// Persistite → valgono in griglia e lightbox, tra un caricamento e l'altro.
+const COLOR_KEY = "ls-color-photos";
+
+function readColorPhotos(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    return new Set<string>(JSON.parse(localStorage.getItem(COLOR_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+
 function Lightbox({
   photos,
   startIndex,
   onClose,
+  colorSet,
+  onToggleColor,
 }: {
   photos: TripPhoto[];
   startIndex: number;
   onClose: () => void;
+  colorSet: Set<string>;
+  onToggleColor: (id: string) => void;
 }) {
   const [index, setIndex] = useState(startIndex);
   const [likes, setLikes] = useState<Set<string>>(() => new Set());
   const [copied, setCopied] = useState(false);
+  // il sito è in B/N globale? (il bottone "a colori" serve solo allora)
+  const [siteMono, setSiteMono] = useState(false);
   const total = photos.length;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const upd = () => setSiteMono(root.classList.contains("mono"));
+    upd();
+    const mo = new MutationObserver(upd);
+    mo.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => mo.disconnect();
+  }, []);
 
   const prev = useCallback(
     () => setIndex((i) => (i - 1 + total) % total),
@@ -927,6 +979,7 @@ function Lightbox({
 
   if (!photo) return null;
   const liked = likes.has(photo.id);
+  const inColor = colorSet.has(photo.id);
 
   return (
     <div
@@ -944,6 +997,38 @@ function Lightbox({
         </span>
 
         <div className="flex items-center gap-1.5 md:gap-2">
+          {/* riporta SOLO questa foto a colori (override del B/N globale) —
+              visibile solo quando il sito è in bianco & nero */}
+          {siteMono && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleColor(photo.id);
+              }}
+              aria-label={inColor ? "Show in black & white" : "Show in colour"}
+              aria-pressed={inColor}
+              title={inColor ? "Back to black & white" : "Show this photo in colour"}
+              className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
+                inColor
+                  ? "border-amber-400/70 bg-amber-400/15 text-amber-300"
+                  : "border-white/20 text-white/70 hover:border-white/40 hover:text-white"
+              }`}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill={inColor ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 2.7c3.9 4 6 6.9 6 9.9a6 6 0 0 1-12 0c0-3 2.1-5.9 6-9.9z" />
+              </svg>
+            </button>
+          )}
           <button
             type="button"
             onClick={(e) => {
@@ -1091,7 +1176,9 @@ function Lightbox({
                   <img
                     src={photo.src}
                     alt={photo.alt}
-                    className="max-h-[80vh] max-w-[94vw] object-contain select-none"
+                    className={`max-h-[80vh] max-w-[94vw] object-contain select-none ${
+                      inColor ? "keep-color" : ""
+                    }`}
                     draggable={false}
                   />
                 </TransformComponent>
