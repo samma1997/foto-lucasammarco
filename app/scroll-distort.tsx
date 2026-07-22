@@ -24,17 +24,25 @@ export default function ScrollDistort({ selector }: { selector: string }) {
     let last = window.scrollY;
     let vel = 0; // velocità smussata (px/frame)
     let scale = 0; // scale corrente applicato
-    let filtered = false;
+    let lastFilter = ""; // ultima stringa filter scritta
     let raf = 0;
 
-    const MAX = 26; // distorsione massima
-    const SENS = 0.9; // sensibilità velocità → distorsione
+    const MAX = 12; // distorsione massima (leggera)
+    const SENS = 0.6; // sensibilità velocità → distorsione
 
-    const setFilter = (on: boolean) => {
-      if (on === filtered) return;
-      filtered = on;
+    // compone il filtro: se il sito è in B/N, mantiene grayscale + distorsione;
+    // altrimenti solo distorsione. Da fermi ("") torna allo stylesheet.
+    const applyFilter = (on: boolean) => {
+      const mono = document.documentElement.classList.contains("mono");
+      const fstr = on
+        ? mono
+          ? "grayscale(1) url(#scroll-distort)"
+          : "url(#scroll-distort)"
+        : "";
+      if (fstr === lastFilter) return;
+      lastFilter = fstr;
       document.querySelectorAll<HTMLElement>(selector).forEach((n) => {
-        n.style.filter = on ? "url(#scroll-distort)" : "";
+        n.style.filter = fstr;
         n.style.willChange = on ? "filter" : "";
       });
     };
@@ -54,7 +62,7 @@ export default function ScrollDistort({ selector }: { selector: string }) {
       disp.setAttribute("scale", scale.toFixed(2));
 
       // applico il filtro solo quando serve (evito costo GPU da fermi/scroll lento)
-      setFilter(scale > 0.4);
+      applyFilter(scale > 0.4);
 
       raf = requestAnimationFrame(loop);
     };
@@ -62,7 +70,7 @@ export default function ScrollDistort({ selector }: { selector: string }) {
     raf = requestAnimationFrame(loop);
     return () => {
       cancelAnimationFrame(raf);
-      setFilter(false);
+      applyFilter(false);
       disp.setAttribute("scale", "0");
     };
   }, [selector]);
