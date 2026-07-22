@@ -54,6 +54,9 @@ export default async function TripPage({
   if (!trip) notFound();
 
   const name = tripName(trip);
+  // Preload della cover (stessa URL a w_900 che carica la slide centrale):
+  // il browser la scarica appena parte il parsing dell'HTML, prima del JS → LCP.
+  const heroPreload = trip.coverSrc.replace(/w_\d+/, "w_900");
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ImageGallery",
@@ -78,6 +81,8 @@ export default async function TripPage({
 
   return (
     <>
+      {/* eslint-disable-next-line @next/next/no-head-element */}
+      <link rel="preload" as="image" href={heroPreload} fetchPriority="high" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

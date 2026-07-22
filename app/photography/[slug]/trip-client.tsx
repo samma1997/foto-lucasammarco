@@ -443,7 +443,12 @@ export default function TripPage() {
               onClick={() => goToSlot(i)}
               className={`absolute w-[62vw] md:w-[28vw] max-w-[460px] aspect-[3/4] overflow-hidden shadow-2xl will-change-transform ${
                 dist === 0 ? "cursor-default" : "cursor-pointer"
-              } ${mounted ? "" : "invisible"}`}
+              } ${
+                // La slide centrale iniziale resta visibile già nell'HTML del
+                // server (è l'LCP, si disegna senza aspettare il JS). Le altre
+                // restano nascoste finché gsap non le posiziona al mount.
+                mounted || i === initialIdx ? "" : "invisible"
+              }`}
               style={{ transformOrigin: "center center" }}
               aria-label={DISPLAY_NAME[t.slug] ?? t.destination}
             >
@@ -453,6 +458,8 @@ export default function TripPage() {
                 className="w-full h-full object-cover pointer-events-none"
                 draggable={false}
                 loading={Math.abs(wrapDist(i - initialIdx)) <= 2 ? "eager" : "lazy"}
+                // la cover centrale è l'LCP → priorità alta di download
+                fetchPriority={i === initialIdx ? "high" : "auto"}
                 decoding="async"
               />
             </div>
