@@ -19,6 +19,7 @@ import { prefersReducedMotion } from "@/lib/motion";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { availableCategories, categoriesForPhotoId } from "@/lib/categories";
 import MusicCredit from "../../music-credit";
+import ScrollDistort from "../../scroll-distort";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(Observer);
@@ -365,6 +366,9 @@ export default function TripPage() {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
+      {/* distorsione foto in base alla velocità di scroll (solo desktop) */}
+      <ScrollDistort selector=".sd-img" />
+
       {/* HEADER */}
       <header className="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-6 md:px-10 pt-5 md:pt-6">
         <div className="flex items-center gap-3">
@@ -555,7 +559,7 @@ export default function TripPage() {
                   alt={p.alt}
                   loading={i < 6 ? "eager" : "lazy"}
                   decoding="async"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                  className="sd-img w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                   draggable={false}
                 />
               </button>

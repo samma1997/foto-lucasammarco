@@ -106,6 +106,32 @@ export default function RootLayout({
               yChannelSelector="G"
             />
           </filter>
+          {/* distorsione pilotata dalla velocità di scroll (sulle foto) */}
+          <filter
+            id="scroll-distort"
+            x="-15%"
+            y="-15%"
+            width="130%"
+            height="130%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feTurbulence
+              id="scroll-turb"
+              type="fractalNoise"
+              baseFrequency="0.015 0.02"
+              numOctaves="2"
+              seed="3"
+              result="noise"
+            />
+            <feDisplacementMap
+              id="scroll-disp"
+              in="SourceGraphic"
+              in2="noise"
+              scale="0"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
+          </filter>
         </svg>
         <PageLoader />
         {children}
