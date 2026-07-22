@@ -68,8 +68,17 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${ibmPlex.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
+        {/* Applica il B/N salvato PRIMA del primo paint → niente flash a colori
+            al refresh. Lo stato è persistito dal toggle in ls-mono. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('ls-mono')==='1')document.documentElement.classList.add('mono')}catch(e){}",
+          }}
+        />
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
       </head>

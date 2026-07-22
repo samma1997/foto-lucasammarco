@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { prefersReducedMotion } from "@/lib/motion";
+
+const MONO_KEY = "ls-mono";
 
 type ViewTransitionDoc = Document & {
   startViewTransition?: (cb: () => void) => { ready: Promise<void> };
@@ -12,19 +14,32 @@ type ViewTransitionDoc = Document & {
  * "Luca Sammarco" / SoundToggle. Aggiunge la classe `mono` su <html> e il CSS
  * globale desatura tutte le foto.
  *
+ * Lo stato è PERSISTITO (ls-mono): al refresh resta in B/N. Uno script inline
+ * nel <head> (vedi layout) applica la classe prima del primo paint → niente
+ * flash a colori. Qui ci limitiamo a sincronizzare il label dopo l'hydration.
+ *
  * Al click, la nuova versione (mono o colore) si "spande" a MACCHIA circolare
  * dal punto esatto del cursore, via View Transitions API + clip-path animato.
  * Fallback morbido (crossfade filter) dove l'API non c'è o se reduced-motion.
  */
 export function MonoToggle({ className = "" }: { className?: string }) {
-  // parte SEMPRE a colori: nessuna persistenza, si resetta a ogni caricamento
+  // init false = coerente con SSR; sincronizzato con la classe reale al mount
   const [mono, setMono] = useState(false);
+
+  useEffect(() => {
+    setMono(document.documentElement.classList.contains("mono"));
+  }, []);
 
   const apply = () => {
     const root = document.documentElement;
     const next = !root.classList.contains("mono");
     root.classList.toggle("mono", next);
     setMono(next);
+    try {
+      localStorage.setItem(MONO_KEY, next ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
   };
 
   const toggle = (e: React.MouseEvent<HTMLButtonElement>) => {
